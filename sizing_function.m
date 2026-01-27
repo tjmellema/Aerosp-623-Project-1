@@ -1,49 +1,61 @@
 import spline_curvature_ref.m
 
+%Determines the distance to all the boundary cooridnates to for projection
+%
 %point_cord = potential point to be added
 %wall_cords = Nx2 vector of all boundary wall cords in order
 %wall_distances = Nx1 vector of distances to all boundary wall cords
-
-%Chat-GPT logic-checked and produced a cleaned version of this function
-
-%Determines the distance to all the boundary cooridnates to for projection
 function wall_distances = distance2BW(point_cord, wall_cords)
     diffs = wall_cords - point_cord;
     wall_distances = sqrt(sum(diffs.^2, 2));
 end
 
-%TODO - get splined boundary BEFORE computing the projection so we can
-%reuse the spline in each iteration.
-function [d, xb] = projection(point_cord, wall_cords)
+%creates universal boundary spline
+%
+%X_BE = original boundary points to be splined
+%ref = degree of refinement
+function X_BE_spline = spline_boundary(X_BE, ref)
+    X_BE_spline = spline_curvature_ref.spline_curvature_ref(X_BE, length(X_BE) -1, 3, ref, 1, 1);
+end
+
+%find the point closest to the splined wall
+%
+%X_pt = point in the interar mesh to get rpojection for
+%X_BE_spline = Boundary wall spline
+function [d, xb] = projection(X_pt, X_BE_spline)
     %get all distances
-    distances = distance2BW(point_cord, wall_cords);
+    distances = distance2BW(X_pt, X_BE_spline);
 
-    %find the closest point
-    [minDistance, closestIndex] = min(distances);
-    
-    %find the closest  between left and right point
-    rightBool = 1;
-    if distances(closestIndex-1) < distances(closestIndex+1)
-        rightBool = 0;
-    end
-
-    %spline between pt1 and pt2
-    Xnew = spline_curvature_ref.spline_curvature_ref(wallcords((closestIndex-2+rightBool-8):(cloesestIndex+1+rightBool+8)), ...
-                                                     20, 3, 3, 1, 1);
-
-    %find the closest distance along spline
-    spline_distances = distance2BW(point_cord, Xnew);
-
-    %return d and xb from spline
-    [d, d_i] = min(spline_distances);
-    xb = Xnew(d_i, 1);
+    %find the closest point on spline
+    [d, closestIndex] = min(distances);
+    xb = X_BE_spline(closestIndex, 1);
 
 end
 
-function h = sizing(sizing_point, wall_points)
+%find the ideal cell size at a location
+%
+%X_pt = point in the interar mesh to get rpojection for
+%X_BE_spline = Boundary wall spline
+function h = sizing(X_pt, X_BE_spline)
         %project the point on the wall
-        [d, xb] = projection(ptIN, wall_points);
+        [d, xb] = projection(X_pt, X_BE_spline);
         
         %sizing formula
-        h = d + xb; %TODO
+        a = 1; %sixing factor
+        h_max = 2; %max cell size
+        % cosine spacing between leading and trailing edge
+        % linear in distnace from the airfoil
+        h = a.* min(h_max, (1 + cos(xb./19)) ./ 2 + d);
 end
+
+
+function plot_projection()
+    return %TODO
+end
+
+function plot_sizing_contour()
+    return %TODO
+end
+
+
+%Chat-GPT logic-checked and produced a cleaned version of this file
