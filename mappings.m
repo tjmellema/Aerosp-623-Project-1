@@ -314,7 +314,7 @@ function boundary_normals = compute_Bn(node_data, element_data, B2E)
     displacement = squeeze(boundary_positions(2, :, :) - boundary_positions(1, :, :));
 
     % Norm
-    boundary_normals(:, :) = displacement ./ vecnorm(displacement, 2, 2);
+    boundary_normals(:, [2,1]) = displacement ./ vecnorm(displacement, 2, 2);
 
 end
 
