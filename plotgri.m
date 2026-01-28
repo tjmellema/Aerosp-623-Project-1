@@ -55,6 +55,33 @@ while (curtot ~= nelemtot),
   end
   curtot = curtot + nelem;
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Modified function such that periodic pairs area plotted with a red-green 
+% dot for the pair
+% Author: landinjm
+% Begin edit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+periodic_pairs = zeros(0, 2);
+A = textscan(fid,'%d %s', 1);
+n_periodic_groups = A{1};
+assert(strcmp(A{2}, 'PeriodicGroup'), "Invalid .gri syntax for periodicity")
+for i = 1:n_periodic_groups
+    A = textscan(fid,'%d %s', 1);
+    n_periodic_node_pairs = A{1};
+    periodicity_type = A{2};
+    assert(strcmp(periodicity_type,'Translational'), "Rotational periodicity not implemented")
+
+    for j = 1:n_periodic_node_pairs
+        periodic_pair = fscanf(fid, '%d', 2);
+        periodic_pairs(end+1, :) = periodic_pair;
+    end
+end
+scatter(V(periodic_pairs(:, 1),1), V(periodic_pairs(:, 1),2), 50, 'filled')
+scatter(V(periodic_pairs(:, 2),1), V(periodic_pairs(:, 2),2), 50, 'g', 'filled')
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% End edit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 fclose(fid);
 nelem = nelemtot;
 axis equal
