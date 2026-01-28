@@ -41,8 +41,8 @@ function uniformRefinement(grifile,nRef)
         while (curtot ~= nElemTot)
             nElemGroup = nElemGroup+1;
             fgets(fid);
-            sline = fgets(fid);
-            [nElem(nElemGroup), Order(nElemGroup), Basis(nElemGroup)] = strread(sline, '%d %d %s');
+            sLine = fgets(fid);
+            [nElem(nElemGroup), Order(nElemGroup), Basis(nElemGroup)] = strread(sLine, '%d %d %s');
             % save these
             switch Basis{1}
                 case 'TriLagrange'
@@ -61,26 +61,23 @@ function uniformRefinement(grifile,nRef)
         end
 
         % read through periodic groups
-        % fgets(fid);
-        % sLine = fgets(fid);
-        % [nPG, PeriodicGroup] = strread(sLine, '%d %s');
-        % periodicInfoRecord = [nPG, PeriodicGroup];
-        % for iPGroups = 1:nPG
-        %     sLine = fgets(fid);
-        %     [nPGNode, Periodicity] = strread(sLine, '%d %s');
-        %     pgroupsInfoRecord(iPGroups,:) = [nPGNode, Periodicity];
-        %     for iPFaces = 1:nPGNode
-        %         A = fscanf(fid, '%d', 2);
-        %         NP(A(1),A(2)) = iPFaces;    % FINISH THIS
-        %         NP(A(2),A(1)) = iPFaces;
-        %     end
-        %     fgets(fid); % needs to bere here for multiple periodic groups
-        % end
+        fgets(fid);
+        sLine = fgets(fid);
+        [nPG, PeriodicGroup] = strread(sLine, '%d %s');
+        for iPGroups = 1:nPG
+            sLine = fgets(fid);
+            [nPGNode(iPGroups), Periodicity(iPGroups)] = strread(sLine, '%d %s');
+            for iPFaces = 1:nPGNode
+                A = fscanf(fid, '%d', 2);
+                NP(iPFaces,:,iPGroups) = A;
+            end
+            fgets(fid); % needs to bere here for multiple periodic groups
+        end
 
 
         %% build new mesh
         visitedEdges = sparse(nNode,nNode);
-        edgerec = zeros(2,1);
+        edgerec = zeros(1,2);
         nNodeNew = nNode;
         newNodes = nodes;
         newNodeNums = zeros(nedge,1);
@@ -88,6 +85,7 @@ function uniformRefinement(grifile,nRef)
         newElem = zeros(nElemNew,3);
         newEdges = zeros(max(nBFace)*2,2,nBGroup);
         edgeIndex = ones(nBGroup,1);
+        periodicNodes = sparse(nNode,nNode);
         i = 1;
         for elem = 1:nElemTot
             elemnodes = [NE(elem,:),NE(elem,1)];
@@ -97,19 +95,39 @@ function uniformRefinement(grifile,nRef)
                 edgerec(1) = elemnodes(edge);
                 edgerec(2) = elemnodes(edge+1);
                 if visitedEdges(edgerec(1),edgerec(2))==0
-                    % edges NEED TO ADD PROJECTION
+                    nNodeNew = nNodeNew + 1;
+                    visitedEdges(edgerec(1),edgerec(2)) = nNodeNew;
+                    visitedEdges(edgerec(2),edgerec(1)) = nNodeNew;
+                    % edges
                     tmpBGroup = edgeTypes(edgerec(1),edgerec(2));
                     if tmpBGroup ~= 0
                         newEdges(edgeIndex(tmpBGroup),:,tmpBGroup) = [edgerec(1),nNodeNew];
                         newEdges(edgeIndex(tmpBGroup)+1,:,tmpBGroup) = [nNodeNew,edgerec(2)];
                         edgeIndex(tmpBGroup) = edgeIndex(tmpBGroup)+2;
+                        % periodic stuff
+                        for iPGroups = 1:nPG
+                            inPGroup = (sum(NP(:,:,iPGroups)==edgerec(1)))+(sum(NP(:,:,iPGroups)==edgerec(2)));
+                            if sum(inPGroup==[2,2])
+                                [row(1),col] = find(NP(:,:,iPGroups)==edgerec(1));
+                                [row(2),col] = find(NP(:,:,iPGroups)==edgerec(2));
+                                pairedNodes = [NP(row(1),rem(col,2)+1,iPGroups),NP(row(2),rem(col,2)+1,iPGroups)];
+                                if periodicNodes(pairedNodes(1),pairedNodes(2)) == 0
+                                    nPGNode(iPGroups) = nPGNode(iPGroups)+1;
+                                    periodicNodes(edgerec(1),edgerec(2)) = nPGNode(iPGroups);
+                                    periodicNodes(edgerec(2),edgerec(1)) = nPGNode(iPGroups);
+                                    NP(nPGNode(iPGroups),col,iPGroups) = nNodeNew;
+                                else
+                                    NP(periodicNodes(pairedNodes(1),pairedNodes(2)),col,iPGroups) = nNodeNew;
+                                end
+                            end
+                        end
+                        % THIS CALCS NEW XY if an edge, so add projection here
+                        newNodes(nNodeNew,:) = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
+                    else
+                        %if not an edge, jsut avg x & y values
+                        newNodes(nNodeNew,:) = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
                     end
-                    nNodeNew = nNodeNew + 1;
-                    visitedEdges(edgerec(1),edgerec(2)) = nNodeNew;
-                    visitedEdges(edgerec(2),edgerec(1)) = nNodeNew;
-                    newNodes(nNodeNew,:) = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
                     newNodeNums(edge) = nNodeNew;
-                    % add periodic boundaries
                 else
                     newNodeNums(edge) = visitedEdges(edgerec(1),edgerec(2));
                 end
@@ -123,6 +141,8 @@ function uniformRefinement(grifile,nRef)
             newElem((elem*4-1),:,i) = [newNodeNums(temp(I)),newNodeNums(temp(I+1)),newNodeNums(temp(I+2))];
             newElem((elem*4-0),:,i) = [elemnodes(3),newNodeNums(3),newNodeNums(2)];
         end
+
+        
         %% set old to new
         nNode = nNodeNew;
         nElemTot = nElemNew;
@@ -131,6 +151,8 @@ function uniformRefinement(grifile,nRef)
         NB = newEdges;
         nElem = nElem*4;
         NE = newElem;
+
+
         %% Save to new .gri file
         % open file for writing
         fname = sprintf(newgrifile);
@@ -155,22 +177,22 @@ function uniformRefinement(grifile,nRef)
 
         % elements
         for i = 1:nElemGroup
-            % nElem(i) Order(i) Basis(i)
             fprintf(fid, '%d %d %s\n', nElem(i), Order(i), Basis{1,i});
             for j = 1:nElem(i)
-                % NE(i,j,1) .. NE(i,j,nn(i))
                 fprintf(fid, '%d %d %d\n', NE(j,1,i), NE(j,2,i), NE(j,3,i));
             end
         end
 
-        % periodics?
-        % nPG "PeriodicGroup"
-        % for i = 1:nPG
-        %     % nPGNode(i) Periodicity(i)
-        %     for j = 1:nPGNode(i)
-        %         % NP(i,j,1) NP(i,j,2)
-        %     end
-        % end
+        % periodics
+        fprintf(fid, '%d %s\n', nPG, PeriodicGroup{1,1});
+        for i = 1:nPG
+            % nPGNode(i) Periodicity(i)
+            fprintf(fid, '%d %s\n', nPGNode(i), Periodicity{1,i});
+            for j = 1:nPGNode(i)
+                % NP(i,j,1) NP(i,j,2)
+                fprintf(fid, '%d %d \n', NP(j,1,i), NP(j,2,i));
+            end
+        end
         
         % set new to old file
         grifile = newgrifile;
