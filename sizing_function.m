@@ -1,4 +1,5 @@
 import spline_curvature_ref.m
+import mesh.m
 
 %Determines the distance to all the boundary cooridnates to for projection
 %
@@ -28,7 +29,7 @@ function [d, xb] = projection(X_pt, X_BE_spline)
 
     %find the closest point on spline
     [d, closestIndex] = min(distances);
-    xb = X_BE_spline(closestIndex, 1);
+    xb = X_BE_spline(closestIndex,:);
 
 end
 
