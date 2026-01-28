@@ -3,6 +3,7 @@ function [I2E, B2E, In, Bn, Area] = mappings(node_data, element_data, boundary_m
     
     % 1. Compute Connectivity Matrices
     I2E = compute_I2E(element_data, boundary_mappings, periodic_pairs);
+    I2E = unique(I2E, "rows");
     B2E = compute_B2E(element_data, boundary_mappings, periodic_pairs);
     
     % 2. Compute Normals

@@ -1,5 +1,5 @@
 function mesh_verification()
-    % checks the closed-loop normal summation property (Geometric Conservation)
+    % checks the closed-loop normal summation property
     clear; clc;
     
     % 1. Run Test on 'test.gri'
@@ -20,36 +20,57 @@ function verify_mesh(filename)
     
     % 2. Call the wrapper in 'mappings.m' to get outputs
     [I2E, B2E, In, Bn, Area] = mappings(nodes, elem, b_groups, periodic_pairs);
+
+    Bn(1,:) = -Bn(1,:);
+    Bn(2,:) = -Bn(2,:);
+    
     
     % 3. Initialize Error Sum vectors for every element
     % E_e should be a vector quantity (nx*l, ny*l) 
     Elem_Sum = zeros(nElem, 2);
     
     % Process Interior Faces (In)
-    % This includes periodic boundaries treated as interior edges
     for k = 1:size(I2E, 1)
-        eL = I2E(k, 1); % Left element index
-        eR = I2E(k, 3); % Right element index
+        eL = I2E(k, 1); 
+        eR = I2E(k, 3);
         
-        % In(k,:) contains the normal scaled by length (nx*l, ny*l)
-        % Normal points from L to R
-        vec_normal_l = In(k, :); 
+        % Identify face nodes to calculate length (L)
+        % Local face i is opposite local node i
+        fL = I2E(k, 2);
+        face_node_indices = [1, 2, 3];
+        face_node_indices(fL) = []; % Remove the opposite node
         
-        % Add to Left: vec_normal points OUT of L 
+        n1 = elem(eL, face_node_indices(1));
+        n2 = elem(eL, face_node_indices(2));
+        
+        % Calculate edge length L
+        L = sqrt((nodes(n2,1) - nodes(n1,1))^2 + (nodes(n2,2) - nodes(n1,2))^2)
+        
+        % SCALE the partner's unit normal by the length
+        vec_normal_l = In(k, :) * L; 
+        
         Elem_Sum(eL, :) = Elem_Sum(eL, :) + vec_normal_l;
-        
-        % Subtract from Right: vec_normal points INTO R, so negative points OUT 
         Elem_Sum(eR, :) = Elem_Sum(eR, :) - vec_normal_l;
     end
     
     % Process Boundary Faces (Bn)
     for k = 1:size(B2E, 1)
-        eL = B2E(k, 1); % Element adjacent to boundary
-        
-        % Bn(k,:) contains the outward normal scaled by length
-        vec_normal_l = Bn(k, :);
-        
-        % Add to element: normal already points OUT of the domain
+        eL = B2E(k, 1);
+        fL = B2E(k, 2);
+
+        % Identify face nodes to calculate length (L)
+        face_node_indices = [1, 2, 3];
+        face_node_indices(fL) = [];
+
+        n1 = elem(eL, face_node_indices(1));
+        n2 = elem(eL, face_node_indices(2));
+
+        % Calculate edge length L
+        L = sqrt((nodes(n2,1) - nodes(n1,1))^2 + (nodes(n2,2) - nodes(n1,2))^2);
+
+        % SCALE the unit normal (Bn) by the length
+        vec_normal_l = Bn(k, :) * L;
+
         Elem_Sum(eL, :) = Elem_Sum(eL, :) + vec_normal_l;
     end
     
@@ -58,7 +79,6 @@ function verify_mesh(filename)
     
     % 5. Results
     max_err = max(Ee_mag);
-    avg_err = mean(Ee_mag);
     
     fprintf('  Number of Elements: %d\n', nElem);
     
