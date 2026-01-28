@@ -1,3 +1,18 @@
+function [I2E, B2E, In, Bn, Area] = mappings(node_data, element_data, boundary_mappings, periodic_pairs)
+    % wrapper function
+    
+    % 1. Compute Connectivity Matrices
+    I2E = compute_I2E(element_data, boundary_mappings, periodic_pairs);
+    B2E = compute_B2E(element_data, boundary_mappings, periodic_pairs);
+    
+    % 2. Compute Normals
+    In = compute_In(node_data, element_data, I2E);
+    Bn = compute_Bn(node_data, element_data, B2E);
+    
+    % 3. Compute Areas
+    Area = compute_element_areas(node_data, element_data);
+end
+
 function face_pairs = compute_face_pairs(element_data)
     %    
     % Compute all the faces pairs of the given node and element data
@@ -321,9 +336,9 @@ function element_areas = compute_element_areas(node_data, element_data)
     element_areas = 0.5 * abs(vec_1(1,:) .* vec_2(2,:) - vec_1(2,:) .* vec_2(1,:));
 end
 
-plotgri("test.gri")
-[node_data, element_data, boundary_mappings, periodic_pairs] = read_gri("test.gri");
-I2E = compute_I2E(element_data, boundary_mappings, periodic_pairs);
-B2E = compute_B2E(element_data, boundary_mappings, periodic_pairs);
-interior_normals = compute_In(node_data, element_data, I2E);
-boundary_normals = compute_Bn(node_data, element_data, B2E);
+% plotgri("test.gri")
+% [node_data, element_data, boundary_mappings, periodic_pairs] = read_gri("test.gri");
+% I2E = compute_I2E(element_data, boundary_mappings, periodic_pairs);
+% B2E = compute_B2E(element_data, boundary_mappings, periodic_pairs);
+% interior_normals = compute_In(node_data, element_data, I2E);
+% boundary_normals = compute_Bn(node_data, element_data, B2E);

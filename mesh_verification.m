@@ -15,11 +15,11 @@ end
 
 function verify_mesh(filename)
     % 1. Read Mesh using your minimal reader
-    [nodes, elem, b_groups] = read_gri_minimal(filename);
+    [nodes, elem, b_groups, periodic_pairs] = read_gri(filename);
     nElem = size(elem, 1);
     
     % 2. Call the wrapper in 'mappings.m' to get outputs
-    [I2E, B2E, In, Bn, Area] = get_mesh_data(nodes, elem, b_groups);
+    [I2E, B2E, In, Bn, Area] = mappings(nodes, elem, b_groups, periodic_pairs);
     
     % 3. Initialize Error Sum vectors for every element
     % E_e should be a vector quantity (nx*l, ny*l) 
@@ -28,8 +28,8 @@ function verify_mesh(filename)
     % Process Interior Faces (In)
     % This includes periodic boundaries treated as interior edges
     for k = 1:size(I2E, 1)
-        eL = I2E(k, 1); % Left element index [cite: 122]
-        eR = I2E(k, 3); % Right element index [cite: 122]
+        eL = I2E(k, 1); % Left element index
+        eR = I2E(k, 3); % Right element index
         
         % In(k,:) contains the normal scaled by length (nx*l, ny*l)
         % Normal points from L to R
