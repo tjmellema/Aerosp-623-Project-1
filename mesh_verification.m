@@ -6,6 +6,11 @@ function mesh_verification()
     fprintf('------------------------------------------------\n');
     fprintf('Running Verification on "test.gri"...\n');
     verify_mesh('test.gri');
+
+    % 1.1. Run Test on 'test_2.gri'
+    fprintf('------------------------------------------------\n');
+    fprintf('Running Verification on "test_2.gri"...\n');
+    verify_mesh('test_2.gri');
     
     % 2. Run Test on 'passage_coarse.gri'
     fprintf('\n------------------------------------------------\n');
@@ -19,17 +24,7 @@ function verify_mesh(filename)
     nElem = size(elem, 1);
     
     % 2. Call the wrapper in 'mappings.m' to get outputs
-    [I2E, B2E, In, Bn, ~] = mappings(nodes, elem, b_groups, periodic_pairs);
-
-    % Flip some values for debugging
-    Bn(1,:) = -Bn(1,:);
-    Bn(2,:) = -Bn(2,:);
-    % Trim some arrays
-    % I2E = I2E(1:4, :);
-    % In = In(1:4, :);
-    % Fix the perioic BC
-    
-    
+    [I2E, B2E, In, Bn, Area] = mappings(nodes, elem, b_groups, periodic_pairs);
     
     % 3. Initialize Error Sum vectors for every element
     % E_e should be a vector quantity (nx*l, ny*l) 
@@ -93,7 +88,8 @@ function verify_mesh(filename)
     if max_err < 1e-12
         fprintf('SUCCESS. Geometric Conservation Law satisfied.\n');
     else
-        fprintf('FAIL. Check normal directions or periodic pairings.\n');
+        fprintf('FAIL. Max Error = %.4f\n', max_err);
+
     end
 end
 

@@ -253,63 +253,42 @@ function boundary_face_to_edge = compute_B2E(element_data, boundary_mappings, pe
     end
 end
 
-% function interior_normals = compute_In(node_data, element_data, I2E)
-%     %
-%     % Compute the normal vector going from the left to right element
-%     % for interior faces
-%     %
-% 
-%     % Preallocate the array
-%     interior_normals = zeros(size(I2E, 1), 2);
-% 
-%     % Grab some slices of things
-%     left_elements = I2E(:, 1);
-%     right_elements = I2E(:, 3);
-% 
-%     left_nodes = element_data(left_elements,  :);
-%     right_nodes = element_data(right_elements,  :);
-% 
-%     % I want to grab the positions but matrices...
-%     left_nodes_flat = left_nodes(:);
-%     right_nodes_flat = right_nodes(:);
-% 
-%     left_positions_flat = node_data(left_nodes_flat, :);
-%     right_positions_flat = node_data(right_nodes_flat, :);
-% 
-%     left_node_positions = reshape(left_positions_flat, [size(left_nodes, 1), 3, 2]);
-%     right_node_positions = reshape(right_positions_flat, [size(right_nodes, 1), 3, 2]);
-% 
-%     % Compute the centroid of the left and right elements
-%     left_node_centroid = squeeze(mean(left_node_positions, 2));
-%     right_node_centroid = squeeze(mean(right_node_positions, 2));
-% 
-%     % Displacement
-%     displacement = right_node_centroid - left_node_centroid;
-% 
-%     % Norm
-%     interior_normals(:, :) = displacement ./ vecnorm(displacement, 2, 2);
-% end
-
 function interior_normals = compute_In(node_data, element_data, I2E)
     interior_normals = zeros(size(I2E, 1), 2);
-    for k = 1:size(I2E, 1)
-        % Get the nodes of the face
-        eL = I2E(k, 1);
-        fL = I2E(k, 2);
-        
-        % Local face logic: nodes opposite to local vertex fL
-        face_idx = mod(fL + [0, 1], 3) + 1; % Gets the other two nodes in CCW order
-        n1 = element_data(eL, face_idx(1));
-        n2 = element_data(eL, face_idx(2));
-        
-        % Vector along the face
-        dx = node_data(n2, 1) - node_data(n1, 1);
-        dy = node_data(n2, 2) - node_data(n1, 2);
-        
-        % Outward normal to eL: [dy, -dx]
-        n_out = [dy, -dx];
-        interior_normals(k, :) = n_out / norm(n_out);
+
+    % Grab some slices of things
+
+    % Note to get the right direction of the interior normals, we have to 
+    % rely on the fact that the node positions are ordered counter-clock-
+    % wise. Using this, we need to take the displacement at the 
+    % preceding node minus the next one.
+    left_elements = I2E(:, 1);
+    left_faces = I2E(:, 2);
+    left_nodes = element_data(left_elements,  :);
+    left_face_nodes = left_nodes(sub2ind(size(left_nodes), (1:size(left_nodes,1))', left_faces));
+    mask = left_nodes == left_face_nodes;
+    interior_face_nodes = zeros(size(left_nodes,1), 2);
+    for i = 1:size(left_nodes,1)
+        zero_indices = find(~mask(i, :));
+        % Edge case for where 0 is in the middle
+        if zero_indices(2) - zero_indices(1) > 1
+            zero_indices([2, 1]) = zero_indices([1, 2]);
+        end
+        interior_face_nodes(i,:) = left_nodes(i, zero_indices);
     end
+    
+    % I want to grab the positions but matrices...
+    interior_positions_flat = node_data(interior_face_nodes, :);
+    interior_positions = reshape(interior_positions_flat, [size(left_nodes, 1), 2, 2]);
+
+    % Displacement
+    displacement = squeeze(interior_positions(:, 2, :) - interior_positions(:, 1, :));
+
+    % Orthogonalize
+    displacement(:, 1) = -displacement(:, 1);
+
+    % Norm
+    interior_normals(:, [2,1]) = displacement ./ vecnorm(displacement, 2, 2);
 end
 
 function boundary_normals = compute_Bn(node_data, element_data, B2E)
@@ -322,23 +301,38 @@ function boundary_normals = compute_Bn(node_data, element_data, B2E)
     boundary_normals = zeros(size(B2E, 1), 2);
 
     % Grab some slices of things
+
+    % Note to get the right direction of the boundary normals, we have to 
+    % rely on the fact that the node positions are ordered counter-clock-
+    % wise. Using this, we need to take the displacement at the 
+    % preceding node minus the next one.
     elements = B2E(:, 1);
     faces = B2E(:, 2);
     nodes = element_data(elements,  :);
     face_nodes = nodes(sub2ind(size(nodes), (1:size(nodes,1))', faces));
-    boundary_face_nodes = nodes(~(nodes == face_nodes));
-
-
+    mask = nodes == face_nodes;
+    boundary_face_nodes = zeros(size(nodes,1), 2);
+    for i = 1:size(nodes,1)
+        zero_indices = find(~mask(i, :));
+        % Edge case for where 0 is in the middle
+        if zero_indices(2) - zero_indices(1) > 1
+            zero_indices([2, 1]) = zero_indices([1, 2]);
+        end
+        boundary_face_nodes(i,:) = nodes(i, zero_indices);
+    end
+    
     % I want to grab the positions but matrices...
     boundary_positions_flat = node_data(boundary_face_nodes, :);
-    boundary_positions = reshape(boundary_positions_flat, [2, size(nodes, 1), 2]);
+    boundary_positions = reshape(boundary_positions_flat, [size(nodes, 1), 2, 2]);
 
     % Displacement
-    displacement = squeeze(boundary_positions(2, :, :) - boundary_positions(1, :, :));
+    displacement = squeeze(boundary_positions(:, 2, :) - boundary_positions(:, 1, :));
+    
+    % Orthogonalize
+    displacement(:, 1) = -displacement(:, 1);
 
     % Norm
     boundary_normals(:, [2,1]) = displacement ./ vecnorm(displacement, 2, 2);
-
 end
 
 function element_areas = compute_element_areas(node_data, element_data)
@@ -358,10 +352,3 @@ function element_areas = compute_element_areas(node_data, element_data)
     % Cross product for the area
     element_areas = 0.5 * abs(vec_1(1,:) .* vec_2(2,:) - vec_1(2,:) .* vec_2(1,:));
 end
-
-% plotgri("test.gri")
-% [node_data, element_data, boundary_mappings, periodic_pairs] = read_gri("test.gri");
-% I2E = compute_I2E(element_data, boundary_mappings, periodic_pairs);
-% B2E = compute_B2E(element_data, boundary_mappings, periodic_pairs);
-% interior_normals = compute_In(node_data, element_data, I2E);
-% boundary_normals = compute_Bn(node_data, element_data, B2E);

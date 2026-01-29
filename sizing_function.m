@@ -1,5 +1,4 @@
 import spline_curvature_ref.m
-import mesh.m
 
 %Determines the distance to all the boundary cooridnates to for projection
 %
@@ -23,13 +22,13 @@ end
 %
 %X_pt = point in the interar mesh to get rpojection for
 %X_BE_spline = Boundary wall spline
-function [d, xb] = projection(X_pt, X_BE_spline)
+function [d, xb, yb] = projection(X_pt, X_BE_spline)
     %get all distances
     distances = distance2BW(X_pt, X_BE_spline);
 
     %find the closest point on spline
     [d, closestIndex] = min(distances);
-    xb = X_BE_spline(closestIndex,:);
+    [xb, yb] = X_BE_spline(closestIndex,:);
 
 end
 
@@ -39,7 +38,7 @@ end
 %X_BE_spline = Boundary wall spline
 function h = sizing(X_pt, X_BE_spline)
         %project the point on the wall
-        [d, xb] = projection(X_pt, X_BE_spline);
+        [d, xb, yb] = projection(X_pt, X_BE_spline);
         
         %sizing formula
         a = 1; %sixing factor
@@ -49,13 +48,53 @@ function h = sizing(X_pt, X_BE_spline)
         h = a.* min(h_max, (1 + cos(xb./19)) ./ 2 + d);
 end
 
+%requested function in 1.4 to show the projection function
+%
+%Xpts = set of coordinates to project
+%X_BE = unsplined boundary coordinates
+function plot_projection(Xpts, X_BE)
 
-function plot_projection()
-    return %TODO
+    %boundary spline
+    X_BE_spline = spline_boundary(X_BE, ref);
+
+    %projection
+    [d, xb, yb] = projection(Xpts, X_BE_spline);
+
+    %plot the reference spline
+    plot(X_BE_spline, Linewidth=1);
+    hold on
+
+    %plot the points
+    scatter(Xpts,'-b' , Linewidth=3);
+
+    %plot the projection to the spline
+    X_plot = [xb'; X_BE_spline(1)'];
+    Y_plot = [yb'; X_BE_spline(2)'];
+    plot(X_plot, Y_plot, '-b', Linewidth=2);
+
+    title('Sample Projection Function')
+    grid on
+
+
 end
 
-function plot_sizing_contour()
-    return %TODO
+%creates a contour of the plot
+%
+%Xpts = node coordinates of a mesh
+%X_BE_spline = coordinates of the splined boundary used for sizing function
+function plot_sizing_contour(Xpts, X_BE_spline)
+
+    % compute the sizing function for each node on the mesh
+    h = sizing(Xpts, X_BE_spline);
+
+    %create contour plot
+    x = Xpts(:, 1);
+    y = Xpts(:, 2);
+    [X, Y] = meshgrid(x,y);
+    contour(X, Y, h);
+    grid on
+    title();
+
 end
 
 
