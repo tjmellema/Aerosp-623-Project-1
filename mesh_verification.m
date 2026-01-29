@@ -7,7 +7,7 @@ function mesh_verification()
     fprintf('Running Verification on "test.gri"...\n');
     verify_mesh('test.gri');
     
-    % 2. Run Test on 'task1_mesh.gri' (whatever we call mesh.gri)
+    % 2. Run Test on 'passage_coarse.gri'
     fprintf('\n------------------------------------------------\n');
     fprintf('Running Verification on "passage_coarse.gri"...\n');
     verify_mesh('passage_coarse.gri');
