@@ -7,10 +7,10 @@ function mesh_verification()
     fprintf('Running Verification on "test.gri"...\n');
     verify_mesh('test.gri');
     
-    % % 2. Run Test on 'task1_mesh.gri' (whatever we call mesh.gri)
-    % fprintf('\n------------------------------------------------\n');
-    % fprintf('Running Verification on "task1_mesh.gri"...\n');
-    % verify_mesh('task1_mesh.gri');
+    % 2. Run Test on 'task1_mesh.gri' (whatever we call mesh.gri)
+    fprintf('\n------------------------------------------------\n');
+    fprintf('Running Verification on "passage_coarse.gri"...\n');
+    verify_mesh('passage_coarse.gri');
 end
 
 function verify_mesh(filename)
@@ -19,10 +19,16 @@ function verify_mesh(filename)
     nElem = size(elem, 1);
     
     % 2. Call the wrapper in 'mappings.m' to get outputs
-    [I2E, B2E, In, Bn, Area] = mappings(nodes, elem, b_groups, periodic_pairs);
+    [I2E, B2E, In, Bn, ~] = mappings(nodes, elem, b_groups, periodic_pairs);
 
+    % Flip some values for debugging
     Bn(1,:) = -Bn(1,:);
     Bn(2,:) = -Bn(2,:);
+    % Trim some arrays
+    % I2E = I2E(1:4, :);
+    % In = In(1:4, :);
+    % Fix the perioic BC
+    
     
     
     % 3. Initialize Error Sum vectors for every element
@@ -44,10 +50,10 @@ function verify_mesh(filename)
         n2 = elem(eL, face_node_indices(2));
         
         % Calculate edge length L
-        L = sqrt((nodes(n2,1) - nodes(n1,1))^2 + (nodes(n2,2) - nodes(n1,2))^2)
-        
+        L = sqrt((nodes(n2,1) - nodes(n1,1))^2 + (nodes(n2,2) - nodes(n1,2))^2);
+
         % SCALE the partner's unit normal by the length
-        vec_normal_l = In(k, :) * L; 
+        vec_normal_l = In(k, :) * L;
         
         Elem_Sum(eL, :) = Elem_Sum(eL, :) + vec_normal_l;
         Elem_Sum(eR, :) = Elem_Sum(eR, :) - vec_normal_l;
@@ -81,6 +87,7 @@ function verify_mesh(filename)
     max_err = max(Ee_mag);
     
     fprintf('  Number of Elements: %d\n', nElem);
+    fprintf('  Max. Error: %d\n', max_err);
     
     % Check for machine precision 
     if max_err < 1e-12

@@ -253,41 +253,63 @@ function boundary_face_to_edge = compute_B2E(element_data, boundary_mappings, pe
     end
 end
 
+% function interior_normals = compute_In(node_data, element_data, I2E)
+%     %
+%     % Compute the normal vector going from the left to right element
+%     % for interior faces
+%     %
+% 
+%     % Preallocate the array
+%     interior_normals = zeros(size(I2E, 1), 2);
+% 
+%     % Grab some slices of things
+%     left_elements = I2E(:, 1);
+%     right_elements = I2E(:, 3);
+% 
+%     left_nodes = element_data(left_elements,  :);
+%     right_nodes = element_data(right_elements,  :);
+% 
+%     % I want to grab the positions but matrices...
+%     left_nodes_flat = left_nodes(:);
+%     right_nodes_flat = right_nodes(:);
+% 
+%     left_positions_flat = node_data(left_nodes_flat, :);
+%     right_positions_flat = node_data(right_nodes_flat, :);
+% 
+%     left_node_positions = reshape(left_positions_flat, [size(left_nodes, 1), 3, 2]);
+%     right_node_positions = reshape(right_positions_flat, [size(right_nodes, 1), 3, 2]);
+% 
+%     % Compute the centroid of the left and right elements
+%     left_node_centroid = squeeze(mean(left_node_positions, 2));
+%     right_node_centroid = squeeze(mean(right_node_positions, 2));
+% 
+%     % Displacement
+%     displacement = right_node_centroid - left_node_centroid;
+% 
+%     % Norm
+%     interior_normals(:, :) = displacement ./ vecnorm(displacement, 2, 2);
+% end
+
 function interior_normals = compute_In(node_data, element_data, I2E)
-    %
-    % Compute the normal vector going from the left to right element
-    % for interior faces
-    %
-
-    % Preallocate the array
     interior_normals = zeros(size(I2E, 1), 2);
-
-    % Grab some slices of things
-    left_elements = I2E(:, 1);
-    right_elements = I2E(:, 3);
-
-    left_nodes = element_data(left_elements,  :);
-    right_nodes = element_data(right_elements,  :);
-
-    % I want to grab the positions but matrices...
-    left_nodes_flat = left_nodes(:);
-    right_nodes_flat = right_nodes(:);
-
-    left_positions_flat = node_data(left_nodes_flat, :);
-    right_positions_flat = node_data(right_nodes_flat, :);
-
-    left_node_positions = reshape(left_positions_flat, [size(left_nodes, 1), 3, 2]);
-    right_node_positions = reshape(right_positions_flat, [size(right_nodes, 1), 3, 2]);
-
-    % Compute the centroid of the left and right elements
-    left_node_centroid = squeeze(mean(left_node_positions, 2));
-    right_node_centroid = squeeze(mean(right_node_positions, 2));
-
-    % Displacement
-    displacement = right_node_centroid - left_node_centroid;
-
-    % Norm
-    interior_normals(:, :) = displacement ./ vecnorm(displacement, 2, 2);
+    for k = 1:size(I2E, 1)
+        % Get the nodes of the face
+        eL = I2E(k, 1);
+        fL = I2E(k, 2);
+        
+        % Local face logic: nodes opposite to local vertex fL
+        face_idx = mod(fL + [0, 1], 3) + 1; % Gets the other two nodes in CCW order
+        n1 = element_data(eL, face_idx(1));
+        n2 = element_data(eL, face_idx(2));
+        
+        % Vector along the face
+        dx = node_data(n2, 1) - node_data(n1, 1);
+        dy = node_data(n2, 2) - node_data(n1, 2);
+        
+        % Outward normal to eL: [dy, -dx]
+        n_out = [dy, -dx];
+        interior_normals(k, :) = n_out / norm(n_out);
+    end
 end
 
 function boundary_normals = compute_Bn(node_data, element_data, B2E)
