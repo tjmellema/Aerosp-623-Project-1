@@ -124,7 +124,7 @@ function uniformRefinement(grifile,nRef)
                     % edges
                     iBGroup = edgeTypes(edgerec(1),edgerec(2));
                     if iBGroup ~= 0
-                        if (iBGroup==3)||(iBGroup==4)
+                        if (iBGroup==4) % if left go opposite for verification purposes
                             newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(2),nNodeNew];
                             newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(1)];
                         else

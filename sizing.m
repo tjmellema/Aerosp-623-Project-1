@@ -3,7 +3,7 @@ function h = sizing(X_pt, X_BE_spline)
         [d, xb, ~] = projection(X_pt, X_BE_spline);
         
         %sizing formula
-        a = 1; %sixing factor
+        a = 1; %sizing factor
         h_max = 2; %max cell size
         % cosine spacing between leading and trailing edge
         % linear in distnace from the airfoil
