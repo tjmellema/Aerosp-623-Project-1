@@ -170,11 +170,3 @@ function isBoundary = build_boundary_nodes(B2E, E2N, num_nodes)
         isBoundary(n2) = true;
     end
 end %written by Chat-GPT
-
-function insertNode()
-    %TODO
-end
-
-function createEdge()
-    %TODO
-end
