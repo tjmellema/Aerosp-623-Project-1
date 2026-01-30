@@ -1,4 +1,4 @@
-%% mesh2_fixed_fullscript.m
+%% meshWithoutGri.m
 % Turbine blade passage mesh (Figure 1 style) using MATLAB PDE Toolbox
 % KEY: Keep your original file mapping, but SWAP which curve is used as
 %      bottom vs top wall:
@@ -125,12 +125,41 @@ title('PDE geometry with edge labels');
 Hmax = chord * Hmax_scale;
 msh = generateMesh(model, 'Hmax', Hmax, 'GeometricOrder','linear');
 
-figure('Name','Coarse mesh');
-pdemesh(model); axis equal; grid on;
-title(sprintf('Coarse mesh: Hmax=%.4g, Triangles=%d', Hmax, size(msh.Elements,2)));
+% Extract data into standard arrays
+nodeCoords = msh.Nodes;      % 2 x nNode
+elemConn   = msh.Elements;   % 3 x nElem
 
-fprintf('Hmax = %.6g\n', Hmax);
-fprintf('Triangles = %d\n', size(msh.Elements,2));
+% --- FIX CCW ORIENTATION ---
+for i = 1:size(elemConn, 2)
+    idx = elemConn(:, i);
+    p1 = nodeCoords(:, idx(1));
+    p2 = nodeCoords(:, idx(2));
+    p3 = nodeCoords(:, idx(3));
+    
+    % Signed area (2D cross product)
+    % Area = 0.5 * |(x2-x1)(y3-y1) - (y2-y1)(x3-x1)|
+    val = (p2(1)-p1(1))*(p3(2)-p1(2)) - (p2(2)-p1(2))*(p3(1)-p1(1));
+    
+    if val < 0
+        % Area is negative -> Clockwise. Swap two nodes to make it CCW.
+        elemConn([2 3], i) = elemConn([3 2], i);
+    end
+end
+
+% Clear the read-only object and keep the corrected arrays
+%clear msh; 
+% Now you have nodeCoords (2xN) and elemConn (3xN) ready for WriteGri.
+
+% %% ---- GENERATE COARSE MESH ----
+% Hmax = chord * Hmax_scale;
+% msh = generateMesh(model, 'Hmax', Hmax, 'GeometricOrder','linear');
+% 
+% figure('Name','Coarse mesh');
+% pdemesh(model); axis equal; grid on;
+% title(sprintf('Coarse mesh: Hmax=%.4g, Triangles=%d', Hmax, size(msh.Elements,2)));
+% 
+% fprintf('Hmax = %.6g\n', Hmax);
+% fprintf('Triangles = %d\n', size(msh.Elements,2));
 
 %% ---- QUICK CHECKS ----
 fprintf('Upstream length:   %.6g (target %g)\n', xminB - xL, Lper);
