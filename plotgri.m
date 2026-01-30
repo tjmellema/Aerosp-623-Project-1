@@ -19,9 +19,10 @@ A = fscanf(fid, '%d', 1);
 nbfgrp = A(1);
 colors = lines(nbfgrp);
 for ibfgrp = 1:nbfgrp
-  fgets(fid);
-  sline = fgets(fid);
-  [nbface, nnode, title] = strread(sline, '%d %d %s');
+    A = textscan(fid,'%d %d %s', 1);
+    nbface = A{1};
+    nnode = A{2};
+    title = A{3};
   for ibface = 1:nbface,
     A = fscanf(fid, '%d', nnode);
     plotedge_color(V(A,:), colors(ibfgrp,:));

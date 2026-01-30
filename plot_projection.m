@@ -31,6 +31,8 @@ function plot_projection()
     title('Sample Projection Function')
     grid on
     axis equal
+    xlabel('x')
+    ylabel('y')
 
 
 end
