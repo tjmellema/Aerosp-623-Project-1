@@ -9,7 +9,7 @@ plot_sizing_contour(node_data, X_BE_spline);
 %
 %Xpts = set of coordinates to project
 %X_BE = unsplined boundary coordinates
-function plot_projection(Xpts, X_BE, ref)
+function plot_projection(Xpts, X_BE)
 
     %boundary spline
     X_BE_spline = spline_boundary(X_BE, ref);
