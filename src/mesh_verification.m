@@ -65,7 +65,7 @@ function verify_mesh(filename)
     Ee_mag = sqrt(Elem_Sum(:,1).^2 + Elem_Sum(:,2).^2);
     
     % 5. Results
-    max_err = max(Ee_mag);
+    [max_err, max_err_index] = max(Ee_mag);
     
     fprintf('  Number of Elements: %d\n', nElem);
     fprintf('  Max. Error: %d\n', max_err);
@@ -75,6 +75,8 @@ function verify_mesh(filename)
         fprintf('SUCCESS. Geometric Conservation Law satisfied.\n');
     else
         fprintf('FAIL. Max Error = %.4f\n', max_err);
+        fprintf('  Index = %d \n', max_err_index);
+        fprintf('  Nodes = %d %d %d \n', elem(max_err_index, 1), elem(max_err_index, 2), elem(max_err_index, 3));
     end
 end
 

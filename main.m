@@ -15,11 +15,13 @@ do_plots = false;
 mesh();
 
 % Write coarse grid to file
+%{
 write_gri("passage_coarse.gri", msh, ...
           inlet_height, inlet_length, ...
           inlet_top, inlet_bottom, ...
           outlet_top, outlet_bottom ...
          );
+%}
 
 plotgri("passage_coarse.gri")
 
