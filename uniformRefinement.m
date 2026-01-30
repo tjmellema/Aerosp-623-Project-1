@@ -24,24 +24,35 @@ function uniformRefinement(grifile,nRef)
         nBGroup = A(1);
         edgeTypes = sparse(nNode,nNode);
         clear X_BE_spline
+        X_BE = zeros(1,2,nBGroup);
         for iBGroup = 1:nBGroup
             fgets(fid);
             sLine = fgets(fid);
             [nBFace(iBGroup), nf(iBGroup), Title(iBGroup)] = strread(sLine, '%d %d %s');
+            alreadyInput = zeros(nNode,1);
+            n = 0;
             for iBFace = 1:nBFace(iBGroup)
                 A = fscanf(fid, '%d', nf(iBGroup));
                 edgeTypes(A(1),A(2)) = iBGroup;
                 edgeTypes(A(2),A(1)) = iBGroup;
-                X_BE(iBFace,:,iBGroup) = nodes(A(1),:);
-                if iBFace == nBFace(iBGroup)
-                    X_BE(iBFace+1,:,iBGroup) = nodes(A(2),:);
+                if ~alreadyInput(A(1))
+                    alreadyInput(A(1)) = 1;
+                    n = n+1;
+                    X_BE(n,:,iBGroup) = nodes(A(1),:);
+                end
+                if ~alreadyInput(A(2))
+                    alreadyInput(A(2)) = 1;
+                    n = n+1;
+                    X_BE(n,:,iBGroup) = nodes(A(2),:);
                 end
             end
             % create splines for remeshing
             switch Title{iBGroup}
                 case 'Top'
+                    X_BE(:,:,iBGroup) = sortrows(X_BE(:,:,iBGroup),1);
                     X_BE_spline(:,:,iBGroup) = spline_boundary(X_BE(:,:,iBGroup), 5);
                 case 'Bottom'
+                    X_BE(:,:,iBGroup) = sortrows(X_BE(:,:,iBGroup),1);
                     X_BE_spline(:,:,iBGroup) = spline_boundary(X_BE(:,:,iBGroup), 5);
             end
         end
@@ -113,8 +124,13 @@ function uniformRefinement(grifile,nRef)
                     % edges
                     iBGroup = edgeTypes(edgerec(1),edgerec(2));
                     if iBGroup ~= 0
-                        newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(1),nNodeNew];
-                        newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(2)];
+                        if (iBGroup==3)||(iBGroup==4)
+                            newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(2),nNodeNew];
+                            newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(1)];
+                        else
+                            newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(1),nNodeNew];
+                            newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(2)];
+                        end
                         edgeIndex(iBGroup) = edgeIndex(iBGroup)+2;
                         % periodic stuff
                         for iPGroups = 1:nPG
