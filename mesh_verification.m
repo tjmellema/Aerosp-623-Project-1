@@ -19,6 +19,9 @@ function mesh_verification()
 end
 
 function verify_mesh(filename)
+    % 0. Plot the mesh
+    plotgri(filename);
+    
     % 1. Read Mesh using your minimal reader
     [nodes, elem, b_groups, periodic_pairs] = read_gri(filename);
     nElem = size(elem, 1);

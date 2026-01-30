@@ -191,23 +191,31 @@ function interior_face_to_edge = compute_I2E(element_data, boundary_mappings, pe
         right_local_indices = find(~right_mask);
 
         % Deal with periodic boundary conditions
-        % TODO: I'm not entirely sure that I should only consider the 
-        % backward substitution for the left element and the opposite
-        % for the right element. It seems to work, but I can't guarantee 
-        % it.
         if size(left_local_indices, 2) == 1
             interior_face_to_edge(i, 2) = left_local_indices;
         else
             left_mask = compute_node_mask(left_element_nodes, node_pair_backward_sub);
             left_local_indices = find(~left_mask);
-            interior_face_to_edge(i, 2) = left_local_indices;
+            if size(left_local_indices, 2) == 1
+                interior_face_to_edge(i, 2) = left_local_indices;
+            else
+                left_mask = compute_node_mask(left_element_nodes, node_pair_forward_sub);
+                left_local_indices = find(~left_mask);
+                interior_face_to_edge(i, 2) = left_local_indices;
+            end
         end
         if size(right_local_indices, 2) == 1
             interior_face_to_edge(i, 4) = right_local_indices;
         else
             right_mask = compute_node_mask(right_element_nodes, node_pair_forward_sub);
             right_local_indices = find(~right_mask);
-            interior_face_to_edge(i, 4) = right_local_indices;
+            if size(right_local_indices, 2) == 1
+                interior_face_to_edge(i, 4) = right_local_indices;
+            else
+                right_mask = compute_node_mask(right_element_nodes, node_pair_backward_sub);
+                right_local_indices = find(~right_mask);
+                interior_face_to_edge(i, 4) = right_local_indices;
+            end
         end
     end
 end
