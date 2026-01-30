@@ -14,19 +14,21 @@ for inode = 1:nnode,
   V(inode,:) = A(1:2)';
 end
 % Read through boundary info
+figure(1); clf; hold on;
 A = fscanf(fid, '%d', 1);
 nbfgrp = A(1);
-for ibfgrp = 1:nbfgrp,
+colors = lines(nbfgrp);
+for ibfgrp = 1:nbfgrp
   fgets(fid);
   sline = fgets(fid);
   [nbface, nnode, title] = strread(sline, '%d %d %s');
   for ibface = 1:nbface,
     A = fscanf(fid, '%d', nnode);
+    plotedge_color(V(A,:), colors(ibfgrp,:));
   end
 end
 
 % Read in elements and plot edges
-figure(1); clf; hold on;
 curtot = 0;
 E2N = zeros(nelemtot, 6);
 while (curtot ~= nelemtot),
@@ -57,7 +59,8 @@ while (curtot ~= nelemtot),
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Modified function such that periodic pairs area plotted with a red-green 
+% Modified function such that periodic pairs area plotted with a red-green
+% Also plots the node ids.
 % dot for the pair
 % Author: landinjm
 % Begin edit
@@ -77,8 +80,12 @@ for i = 1:n_periodic_groups
         periodic_pairs(end+1, :) = periodic_pair;
     end
 end
-scatter(V(periodic_pairs(:, 1),1), V(periodic_pairs(:, 1),2), 50, 'filled')
+scatter(V(periodic_pairs(:, 1),1), V(periodic_pairs(:, 1),2), 50, 'r', 'filled')
 scatter(V(periodic_pairs(:, 2),1), V(periodic_pairs(:, 2),2), 50, 'g', 'filled')
+
+for i = 1:size(V,1)
+    text(V(i,1), V(i,2), sprintf('%d', i), 'FontSize', 8, 'Color', 'b', 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'right');
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % End edit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,4 +104,10 @@ function plotedge(V);
 x = V(:,1);
 y = V(:,2);
 plot(x,y, 'k-', 'linewidth', 1);
+
+function plotedge_color(V, color);
+    x = V(:,1);
+    y = V(:,2);
+    plot(x, y, '-', 'Color', color, 'LineWidth', 4);
+
 
