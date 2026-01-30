@@ -28,8 +28,8 @@ function [node_data, element_data, boundary_mappings, periodic_pairs] = read_gri
         % Grab the overall data for the boundary group (id)
         A = textscan(fstream,'%d %d %s', 1);
         n_boundary_face = A{1};
-        %n_linear_nodes = A(2);
-        %boundary_type = A{3}
+        %n_linear_nodes = A{2};
+        %boundary_type = A{3};
 
         % Grab the rest of the nodes that are part of the boundary
         for j = 1:n_boundary_face
