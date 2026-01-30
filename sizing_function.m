@@ -52,7 +52,7 @@ end
 %
 %Xpts = set of coordinates to project
 %X_BE = unsplined boundary coordinates
-function plot_projection(Xpts, X_BE)
+function plot_projection(Xpts, X_BE, ref)
 
     %boundary spline
     X_BE_spline = spline_boundary(X_BE, ref);
