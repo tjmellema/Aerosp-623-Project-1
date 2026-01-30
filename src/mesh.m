@@ -15,8 +15,8 @@ Lper  = 17;      % mm (streamwise periodic padding upstream/downstream)
 Hmax_scale = 1/15;  % adjust to get ~1000–1500 triangles
 
 % IMPORTANT: keep your current mapping (per your note)
-UpperFile = 'bladelower.txt';   % "Upper" dataset variable (might need to swap)
-LowerFile = 'bladeupper.txt';   % "Lower" dataset variable (might need to swap)
+UpperFile = 'contrib/bladelower.txt';   % "Upper" dataset variable (might need to swap)
+LowerFile = 'contrib/bladeupper.txt';   % "Lower" dataset variable (might need to swap)
 
 tol = 1e-10;
 
@@ -28,20 +28,9 @@ Upper = load(UpperFile);  % [x y]
 Lower = load(LowerFile);  % [x y]
 assert(size(Upper,2)==2 && size(Lower,2)==2, 'Blade files must be Nx2 arrays');
 
-% Remove exact/tiny duplicates in raw files
-%Upper = unique(round(Upper./tol).*tol, 'rows', 'stable');
-%Lower = unique(round(Lower./tol).*tol, 'rows', 'stable');
-
 % Sort by x for interpolation/clipping
 Upper = sortrows(Upper, 1);
 Lower = sortrows(Lower, 1);
-
-%% ---- QUICK SANITY PLOT (optional, but very helpful) ----
-% figure('Name','Raw curves (as loaded)'); hold on; axis equal; grid on;
-% plot(Upper(:,1), Upper(:,2), 'b.-');
-% plot(Lower(:,1), Lower(:,2), 'r.-');
-% legend('Upper variable','Lower variable','Location','best');
-% title('Sanity check: curves BEFORE shifting');
 
 %% ---- DEFINE BLADE x-EXTENT + PERIODIC PLANES ----
 xminB = min([Upper(:,1); Lower(:,1)]);

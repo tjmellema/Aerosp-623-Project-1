@@ -1,33 +1,16 @@
-function mesh_verification()
-    % checks the closed-loop normal summation property
-    clear; clc;
-    
-    % 1. Run Test on 'test.gri'
+function mesh_verification(filename)
     fprintf('------------------------------------------------\n');
-    fprintf('Running Verification on "test.gri"...\n');
-    verify_mesh('test.gri');
-
-    % 1.1. Run Test on 'test_2.gri'
-    fprintf('------------------------------------------------\n');
-    fprintf('Running Verification on "test_2.gri"...\n');
-    verify_mesh('test_2.gri');
-    
-    % 2. Run Test on 'passage_coarse.gri'
-    fprintf('\n------------------------------------------------\n');
-    fprintf('Running Verification on "passage_coarse.gri"...\n');
-    verify_mesh('passage_coarse.gri');
+    fprintf('Running Verification on "%s"...\n', filename);
+    verify_mesh(filename);
 end
 
 function verify_mesh(filename)
-    % 0. Plot the mesh
-    plotgri(filename);
-    
     % 1. Read Mesh using your minimal reader
     [nodes, elem, b_groups, periodic_pairs] = read_gri(filename);
     nElem = size(elem, 1);
     
     % 2. Call the wrapper in 'mappings.m' to get outputs
-    [I2E, B2E, In, Bn, Area] = mappingsFixed(nodes, elem, b_groups, periodic_pairs);
+    [I2E, B2E, In, Bn, Area] = mappings(nodes, elem, b_groups, periodic_pairs);
     
     % 3. Initialize Error Sum vectors for every element
     % E_e should be a vector quantity (nx*l, ny*l) 
@@ -92,7 +75,6 @@ function verify_mesh(filename)
         fprintf('SUCCESS. Geometric Conservation Law satisfied.\n');
     else
         fprintf('FAIL. Max Error = %.4f\n', max_err);
-
     end
 end
 
