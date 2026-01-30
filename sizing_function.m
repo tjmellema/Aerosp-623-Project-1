@@ -28,8 +28,8 @@ function [d, xb, yb] = projection(X_pt, X_BE_spline)
 
     %find the closest point on spline
     [d, closestIndex] = min(distances);
-    [xb, yb] = X_BE_spline(closestIndex,:);
-
+    xb = X_BE_spline(closestIndex,1);
+    yb = X_BE_spline(closestIndex,2);
 end
 
 %find the ideal cell size at a location
