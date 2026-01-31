@@ -23,14 +23,14 @@ function uniformRefinement(grifile,nRef)
         A = fscanf(fid, '%d', 1);
         nBGroup = A(1);
         edgeTypes = sparse(nNode,nNode);
-        clear X_BE_spline
-        X_BE = zeros(1,2,nBGroup);
+        clear X_BE_spline_Top X_BE_spline_Bottom
         for iBGroup = 1:nBGroup
             fgets(fid);
             sLine = fgets(fid);
             [nBFace(iBGroup), nf(iBGroup), Title(iBGroup)] = strread(sLine, '%d %d %s');
             alreadyInput = zeros(nNode,1);
             n = 0;
+            X_BE = zeros(1,2);
             for iBFace = 1:nBFace(iBGroup)
                 A = fscanf(fid, '%d', nf(iBGroup));
                 edgeTypes(A(1),A(2)) = iBGroup;
@@ -38,22 +38,22 @@ function uniformRefinement(grifile,nRef)
                 if ~alreadyInput(A(1))
                     alreadyInput(A(1)) = 1;
                     n = n+1;
-                    X_BE(n,:,iBGroup) = nodes(A(1),:);
+                    X_BE(n,:) = nodes(A(1),:);
                 end
                 if ~alreadyInput(A(2))
                     alreadyInput(A(2)) = 1;
                     n = n+1;
-                    X_BE(n,:,iBGroup) = nodes(A(2),:);
+                    X_BE(n,:) = nodes(A(2),:);
                 end
             end
             % create splines for remeshing
             switch Title{iBGroup}
-                case 'Top'
-                    X_BE(:,:,iBGroup) = sortrows(X_BE(:,:,iBGroup),1);
-                    X_BE_spline(:,:,iBGroup) = spline_boundary(X_BE(:,:,iBGroup), 5);
-                case 'Bottom'
-                    X_BE(:,:,iBGroup) = sortrows(X_BE(:,:,iBGroup),1);
-                    X_BE_spline(:,:,iBGroup) = spline_boundary(X_BE(:,:,iBGroup), 5);
+                case 'BladeTop'
+                    X_BE = sortrows(X_BE,1);
+                    X_BE_spline_Top = spline_boundary(X_BE, 5);
+                case 'BladeBottom'
+                    X_BE = sortrows(X_BE,1);
+                    X_BE_spline_Bottom = spline_boundary(X_BE, 5);
             end
         end
 
@@ -124,7 +124,7 @@ function uniformRefinement(grifile,nRef)
                     % edges
                     iBGroup = edgeTypes(edgerec(1),edgerec(2));
                     if iBGroup ~= 0
-                        if (iBGroup==4) % if left go opposite for verification purposes
+                        if (iBGroup==5) % if left go opposite for verification purposes
                             newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(2),nNodeNew];
                             newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(1)];
                         else
@@ -151,13 +151,13 @@ function uniformRefinement(grifile,nRef)
                         end
                         % THIS CALCS NEW XY if an edge, bot & top
                         switch Title{iBGroup}
-                            case 'Top'
+                            case 'BladeTop'
                                 X_pt = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
-                                [~, xb, yb] = projection(X_pt, X_BE_spline(:,:,iBGroup));
+                                [~, xb, yb] = projection(X_pt, X_BE_spline_Top);
                                 newNodes(nNodeNew,:) = [xb,yb];
-                            case 'Bottom'
+                            case 'BladeBottom'
                                 X_pt = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
-                                [~, xb, yb] = projection(X_pt, X_BE_spline(:,:,iBGroup));
+                                [~, xb, yb] = projection(X_pt, X_BE_spline_Bottom);
                                 newNodes(nNodeNew,:) = [xb,yb];
                             otherwise
                                 newNodes(nNodeNew,:) = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
