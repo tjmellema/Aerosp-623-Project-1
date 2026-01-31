@@ -56,23 +56,42 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
         if interior_edge_refinement(i) == 1
             eL = I2E(i,1);
             fL = I2E(i,2);
+            eR = I2E(i,3);
+            fR = I2E(i,4);
 
             nodesL = elements(eL,:);
             nodesL(fL) = [];
 
+            nodesR = elements(eR,:);
+            nodesR(fR) = [];
+
             a = nodesL(1);
             b = nodesL(2);
+
+            c = nodesR(1);
+            d = nodesR(2);
         
             key = edge_key(a,b);
+            keyR = edge_key(c,d);
             if ~isKey(edge2node, key)
-                midpoint = 0.5*(nodes(a,:) + nodes(b,:));
-                new_nodes(end+1,:) = midpoint;
-                edge2node(key) = size(new_nodes,1);
+                midpoint_L = 0.5*(nodes(a,:) + nodes(b,:));
+                midpoint_R = 0.5*(nodes(c,:) + nodes(d,:));
+                
+                if midpoint_L == midpoint_R
+                    new_nodes(end+1,:) = midpoint_L;
+                    edge2node(key) = size(new_nodes,1);
+                else
+                    new_nodes(end+1,:) = midpoint_L;
+                    edge2node(key) = size(new_nodes,1);
+                    new_nodes(end+1,:) = midpoint_R;
+                    edge2node(keyR) = size(new_nodes,1);
+                end
+                
             end
         end
     end
 
-    new_elements = [];
+    new_elements = zeros(0,3);
 
     for e = 1:n_elements
         nodes_e = elements(e,:);
@@ -107,18 +126,63 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
                     new_elements(end+1,:) = [m31 n2 n3];
                 end
             case 2
-                if ~flags(1)
-                    new_elements(end+1,:) = [n1 n2 m23];
-                    new_elements(end+1,:) = [n1 m23 m31];
-                    new_elements(end+1,:) = [m31 m23 n3];
-                elseif ~flags(2)
-                    new_elements(end+1,:) = [n1 m12 n3];
-                    new_elements(end+1,:) = [m12 n2 m31];
-                    new_elements(end+1,:) = [m31 n2 n3];
-                else
-                    new_elements(end+1,:) = [n1 m12 m23];
-                    new_elements(end+1,:) = [m12 n2 m23];
-                    new_elements(end+1,:) = [n1 m23 n3];
+                % Coordinates
+                p1 = nodes(n1,:);
+                p2 = nodes(n2,:);
+                p3 = nodes(n3,:);
+            
+                % Interior angles
+                a2 = triAngle(p1,p2,p3);
+                a3 = triAngle(p2,p3,p1);
+                a1 = triAngle(p3,p1,p2);
+            
+                % Find largest angle
+                [~, idx] = max([a1 a2 a3]);
+            
+                if ~flags(1)   % edge 23 unrefined
+                    % edges 12 and 31 refined → split across angle at node 2
+                    disp('edge 23');
+                    if idx == 2
+                        % optimal split
+                        new_elements(end+1,:) = [n1 m12 m31];
+                        new_elements(end+1,:) = [m12 n2 m23];
+                        new_elements(end+1,:) = [m31 m23 n3];
+                    else
+                        % default split
+                        new_elements(end+1,:) = [n1 n2 m23];
+                        new_elements(end+1,:) = [n1 m23 m31];
+                        new_elements(end+1,:) = [m31 m23 n3];
+                    end
+            
+                elseif ~flags(2)   % edge 31 unrefined
+                    disp('edge 31');
+                    % edges 12 and 23 refined → split across angle at node 3
+                    if idx == 3
+                        % optimal split
+                        new_elements(end+1,:) = [n1 m12 m31];
+                        new_elements(end+1,:) = [m12 n2 m23];
+                        new_elements(end+1,:) = [m31 m23 n3];
+                    else
+                        % default split
+                        new_elements(end+1,:) = [n1 m12 n3];
+                        new_elements(end+1,:) = [m12 n2 m31];
+                        new_elements(end+1,:) = [m31 n2 n3];
+                    end
+            
+                else   % edge 12 unrefined
+                    disp('edge 12');
+                    % edges 23 and 31 refined → split across angle at node 1
+                    if idx == 1
+                        % optimal split
+                        new_elements(end+1,:) = [n1 m12 m31];
+                        new_elements(end+1,:) = [m12 n2 m23];
+                        new_elements(end+1,:) = [m31 m23 n3];
+                    else
+                        % default split
+                        new_elements(end+1,:) = [n1 m12 m23];
+                        new_elements(end+1,:) = [m12 n2 m23];
+                        new_elements(end+1,:) = [n1 m23 n3];
+                    end
                 end
             case 3
                 new_elements(end+1,:) = [n1 m12 m31];
@@ -127,4 +191,19 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
                 new_elements(end+1,:) = [m12 m23 m31];
         end
     end
+end
+
+function ang = triAngle(A, B, C)
+% TRIANGLE Returns the interior angle at vertex A (radians)
+%
+%   A, B, C are 1×2 coordinate vectors
+
+    v1 = B - A;
+    v2 = C - A;
+
+    % Numerically safe acos
+    cosang = dot(v1, v2) / (norm(v1) * norm(v2));
+    cosang = max(min(cosang,1),-1);   % clamp for safety
+
+    ang = acos(cosang);
 end
