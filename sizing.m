@@ -18,7 +18,7 @@ function h = sizing(point, top_spline, bottom_spline)
 
         
     % Sizing formula
-    a = 0.545; %sizing factor
+    a = .8; %sizing factor
     h_max = 1000000; %max cell size
     h_min = 0; %min cell size
 

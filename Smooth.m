@@ -4,7 +4,7 @@
 %N = connectivity matrix
 %isBoundary = boolean area for each node and if that node is a boundary
 %num_iter = number of times to smooth the function
-function Xsnew = Smooth(Xs, num_iter, E2N, B2E, num_nodes)
+function Xsnew = Smooth(Xs, num_iter, E2N, num_nodes)
     %call the helper funcitons
     N = Connectivity(E2N, num_nodes); % Create connectivity matrix
     isBoundary = check_boundary(E2N, num_nodes); % Identify boundary nodes

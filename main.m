@@ -30,6 +30,7 @@ write_gri("coarse.gri", nodes, elements, ...
          );
 
 % Verify meshes
+
 tic;
 mesh_verification('test_grids/test.gri');
 time1 = toc;
@@ -64,8 +65,7 @@ tic;
 mesh_verification('passage_coarse3.gri');
 time7 = toc;
 fprintf('Time for passage_coarse3.gri: %.4f seconds\n', time7);
-
-
+%{
 create_local_refinement();
 plotMesh(E2N, nodes, 'tri')
 
@@ -74,3 +74,8 @@ write_gri("coarse_local_refinement.gri", nodes, E2N, ...
           inlet_top, inlet_bottom, ...
           outlet_top, outlet_bottom ...
          );
+%}
+tic;
+mesh_verification('coarse_local_refinement.gri');
+time7 = toc;
+fprintf('Time for passage_coarse3.gri: %.4f seconds\n', time7);

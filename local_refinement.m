@@ -5,6 +5,7 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
     n_elements = size(elements, 1);
     n_nodes = size(nodes, 1);
     n_interior_faces = size(I2E, 1);
+    n_boundary_faces = size(B2E, 1);
 
     edge_refinement = zeros(n_elements, 3);
     interior_edge_refinement = zeros(n_interior_faces, 1);
@@ -35,6 +36,34 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
             edge_refinement(left_element, left_face) = 1;
             edge_refinement(right_element, right_face) = 1;
             interior_edge_refinement(i) = 1;
+        end
+    end
+
+    boundary_edge_refinement = zeros(n_boundary_faces, 1);
+    % Loop over the boundary faces to determine whether to flag refinement
+    % or not
+    for i = 1:n_boundary_faces
+        % Grab the element
+        element = B2E(i, 1);
+        face = B2E(i, 2);
+
+        % Grab edge length from the left element
+        elements_nodes = elements(element, :);
+        elements_nodes(face) = [];
+        element_positions = nodes(elements_nodes, :);
+
+        face_center = 0.5*(element_positions(1,:) + element_positions(2,:));
+
+        edge_length = sqrt(sum((element_positions(1, :) - element_positions(2, :)).^2));
+
+        % Grab the mesh length from the size function
+        ideal_h = sizing(face_center, top_spline, bottom_spline);
+
+        % Add the refinement to the left and right elements to make
+        % things easier later on
+        if edge_length > ideal_h
+            edge_refinement(element, face) = 1;
+            boundary_edge_refinement(i) = 1;
         end
     end
 
@@ -191,7 +220,10 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
         end
     end
 
-    new_nodes = Smooth(new_nodes, 5, new_elements, B2E, size(new_nodes, 1));
+
+
+
+    new_nodes = Smooth(new_nodes, 5, new_elements, size(new_nodes, 1));
 end
 
 function ang = triAngle(A, B, C)
