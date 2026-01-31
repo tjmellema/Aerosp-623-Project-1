@@ -153,12 +153,12 @@ function uniformRefinement(grifile,nRef)
                         switch Title{iBGroup}
                             case 'BladeTop'
                                 X_pt = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
-                                [~, xb, yb] = projection(X_pt, X_BE_spline_top);
-                                newNodes(nNodeNew,:) = [xb,yb];
+                                [~, xyb] = projection(X_pt, X_BE_spline_top);
+                                newNodes(nNodeNew,:) = [xyb];
                             case 'BladeBottom'
                                 X_pt = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
-                                [~, xb, yb] = projection(X_pt, X_BE_spline_bottom);
-                                newNodes(nNodeNew,:) = [xb,yb];
+                                [~, xyb] = projection(X_pt, X_BE_spline_bottom);
+                                newNodes(nNodeNew,:) = [xyb];
                             otherwise
                                 newNodes(nNodeNew,:) = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
                         end
