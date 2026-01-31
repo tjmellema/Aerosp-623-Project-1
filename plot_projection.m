@@ -9,7 +9,7 @@ function plot_projection()
     ref = 3;
 
     %boundary spline
-    X_BE_spline = spline_boundary(X_BE, ref);
+    [X_BE_spline, ~] = spline_boundary(X_BE, X_BE, ref);
 
     %projection
     for i = 1:size(Xpts,1)
