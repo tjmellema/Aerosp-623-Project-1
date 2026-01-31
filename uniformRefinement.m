@@ -23,7 +23,6 @@ function uniformRefinement(grifile,nRef)
         A = fscanf(fid, '%d', 1);
         nBGroup = A(1);
         edgeTypes = sparse(nNode,nNode);
-        clear X_BE_spline_Top X_BE_spline_Bottom
         for iBGroup = 1:nBGroup
             fgets(fid);
             sLine = fgets(fid);
@@ -50,12 +49,13 @@ function uniformRefinement(grifile,nRef)
             switch Title{iBGroup}
                 case 'BladeTop'
                     X_BE = sortrows(X_BE,1);
-                    X_BE_spline_Top = spline_boundary(X_BE, 5);
+                    X_BE_top = X_BE;
                 case 'BladeBottom'
                     X_BE = sortrows(X_BE,1);
-                    X_BE_spline_Bottom = spline_boundary(X_BE, 5);
+                    X_BE_bottom = X_BE;
             end
         end
+        [X_BE_spline_top, X_BE_spline_bottom] = spline_boundary(X_BE_top, X_BE_bottom, 5);
 
         % read through elements
         curtot = 0;
@@ -90,7 +90,7 @@ function uniformRefinement(grifile,nRef)
         for iPGroups = 1:nPG
             sLine = fgets(fid);
             [nPGNode(iPGroups), Periodicity(iPGroups)] = strread(sLine, '%d %s');
-            for iPFaces = 1:nPGNode
+            for iPFaces = 1:nPGNode(iPGroups)
                 A = fscanf(fid, '%d', 2);
                 NP(iPFaces,:,iPGroups) = A;
             end
@@ -124,13 +124,13 @@ function uniformRefinement(grifile,nRef)
                     % edges
                     iBGroup = edgeTypes(edgerec(1),edgerec(2));
                     if iBGroup ~= 0
-                        if (iBGroup==5) % if left go opposite for verification purposes
-                            newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(2),nNodeNew];
-                            newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(1)];
-                        else
+                        % if (iBGroup==5) % if left go opposite for verification purposes
+                        %     newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(2),nNodeNew];
+                        %     newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(1)];
+                        % else
                             newEdges(edgeIndex(iBGroup),:,iBGroup) = [edgerec(1),nNodeNew];
                             newEdges(edgeIndex(iBGroup)+1,:,iBGroup) = [nNodeNew,edgerec(2)];
-                        end
+                        % end
                         edgeIndex(iBGroup) = edgeIndex(iBGroup)+2;
                         % periodic stuff
                         for iPGroups = 1:nPG
@@ -153,11 +153,11 @@ function uniformRefinement(grifile,nRef)
                         switch Title{iBGroup}
                             case 'BladeTop'
                                 X_pt = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
-                                [~, xb, yb] = projection(X_pt, X_BE_spline_Top);
+                                [~, xb, yb] = projection(X_pt, X_BE_spline_top);
                                 newNodes(nNodeNew,:) = [xb,yb];
                             case 'BladeBottom'
                                 X_pt = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
-                                [~, xb, yb] = projection(X_pt, X_BE_spline_Bottom);
+                                [~, xb, yb] = projection(X_pt, X_BE_spline_bottom);
                                 newNodes(nNodeNew,:) = [xb,yb];
                             otherwise
                                 newNodes(nNodeNew,:) = (nodes(elemnodes(edge),:)+nodes(elemnodes(edge+1),:))/2;
