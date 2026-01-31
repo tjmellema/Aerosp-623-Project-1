@@ -11,8 +11,8 @@ pwd = fileparts(mfilename('fullpath'));
 addpath(fullfile(pwd, 'test_grids'));
 
 % Read in the data
-[node_data, element_data, boundary_mappings, periodic_pairs] = read_gri("test.gri");
-plotMesh(element_data, node_data, 'tri', true);
+[node_data, element_data, boundary_mappings, periodic_pairs] = read_gri("coarse.gri");
+%plotMesh(element_data, node_data, 'tri', true);
 
 % Grab mappings
 [I2E, B2E, In, Bn, Area] = mappings(node_data, element_data, boundary_mappings, periodic_pairs);
@@ -28,4 +28,4 @@ bottom_coords = unique(node_data(bottom_nodes,:), 'rows');
 %[spline_top, spline_bottom] = spline_boundary(top_coords, bottom_coords, 3);
 
 [nodes, E2N] = local_refinement(node_data, element_data, top_coords, bottom_coords, I2E, B2E);
-plotMesh(E2N, nodes, 'tri', true);
+%plotMesh(E2N, nodes, 'tri', false);

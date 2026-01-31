@@ -33,6 +33,4 @@ function h = sizing(point, top_spline, bottom_spline)
     edge_factor = max(edge_factor, 0.3);
 
     h = a.* max(min(h_max, edge_factor + 0.1 .* d), h_min);
-
-    h = 0;%delete
 end

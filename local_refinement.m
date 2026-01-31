@@ -132,56 +132,55 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
                 p3 = nodes(n3,:);
             
                 % Interior angles
-                a2 = triAngle(p1,p2,p3);
-                a3 = triAngle(p2,p3,p1);
-                a1 = triAngle(p3,p1,p2);
-            
-                % Find largest angle
-                [~, idx] = max([a1 a2 a3]);
-            
-                if ~flags(1)   % edge 23 unrefined
+                a1 = triAngle(p1,p2,p3);
+                a2 = triAngle(p2,p3,p1);
+                a3 = triAngle(p3,p1,p2);   
+
+                %disp([a1, a2, a3]);
+
+                if ~flags(2)   % edge 23 unrefined
                     % edges 12 and 31 refined → split across angle at node 2
-                    disp('edge 23');
-                    if idx == 2
-                        % optimal split
+                    %disp('edge 23');
+                    if a2 > a3 %angle on node 2 is larger
+                        %disp('angle 2 larger');
                         new_elements(end+1,:) = [n1 m12 m31];
-                        new_elements(end+1,:) = [m12 n2 m23];
-                        new_elements(end+1,:) = [m31 m23 n3];
-                    else
-                        % default split
-                        new_elements(end+1,:) = [n1 n2 m23];
-                        new_elements(end+1,:) = [n1 m23 m31];
-                        new_elements(end+1,:) = [m31 m23 n3];
-                    end
-            
-                elseif ~flags(2)   % edge 31 unrefined
-                    disp('edge 31');
-                    % edges 12 and 23 refined → split across angle at node 3
-                    if idx == 3
-                        % optimal split
-                        new_elements(end+1,:) = [n1 m12 m31];
-                        new_elements(end+1,:) = [m12 n2 m23];
-                        new_elements(end+1,:) = [m31 m23 n3];
-                    else
-                        % default split
-                        new_elements(end+1,:) = [n1 m12 n3];
                         new_elements(end+1,:) = [m12 n2 m31];
                         new_elements(end+1,:) = [m31 n2 n3];
+                    else %angle on node 3 is larger
+                        %disp('angle 3 larger');
+                        new_elements(end+1,:) = [n1 m12 m31];
+                        new_elements(end+1,:) = [m31 m12 n3];
+                        new_elements(end+1,:) = [m12 n2 n3];
+                    end
+            
+                elseif ~flags(3)   % edge 31 unrefined
+                    %disp('edge 31');
+                    % edges 12 and 23 refined → split across angle at node 3
+                    if a3 > a1 %angle on node 3 is larger
+                        %disp('angle 3 larger');
+                        new_elements(end+1,:) = [n1 m12 n3];
+                        new_elements(end+1,:) = [m12 m23 n3];
+                        new_elements(end+1,:) = [m12 n2 m23];
+                    else %angle on node 1 is larger
+                        %disp('angle 1 larger');
+                        new_elements(end+1,:) = [n1 m23 n3];
+                        new_elements(end+1,:) = [n1 m12 m23];
+                        new_elements(end+1,:) = [m12 n2 m23];
                     end
             
                 else   % edge 12 unrefined
-                    disp('edge 12');
+                    %disp('edge 12');
                     % edges 23 and 31 refined → split across angle at node 1
-                    if idx == 1
-                        % optimal split
-                        new_elements(end+1,:) = [n1 m12 m31];
-                        new_elements(end+1,:) = [m12 n2 m23];
+                    if a1 > a2 %angle on node 1 is larger
+                        %disp('angle 1 larger');
+                        new_elements(end+1,:) = [n1 n2 m23];
+                        new_elements(end+1,:) = [n1 m23 m31];
                         new_elements(end+1,:) = [m31 m23 n3];
-                    else
-                        % default split
-                        new_elements(end+1,:) = [n1 m12 m23];
-                        new_elements(end+1,:) = [m12 n2 m23];
-                        new_elements(end+1,:) = [n1 m23 n3];
+                    else %angle on node 2 is larger
+                        %disp('angle 2 larger');
+                        new_elements(end+1,:) = [n1 n2 m31];
+                        new_elements(end+1,:) = [m31 n2 m23];
+                        new_elements(end+1,:) = [m31 m23 n3];
                     end
                 end
             case 3
