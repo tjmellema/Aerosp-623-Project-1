@@ -263,8 +263,6 @@ function boundary_face_to_edge = compute_B2E(element_data, boundary_mappings, pe
 end
 
 function interior_normals = compute_In(node_data, element_data, I2E)
-    interior_normals = zeros(size(I2E, 1), 2);
-
     % Grab some slices of things
 
     % Note to get the right direction of the interior normals, we have to 
@@ -284,7 +282,7 @@ function interior_normals = compute_In(node_data, element_data, I2E)
             zero_indices([2, 1]) = zero_indices([1, 2]);
         end
         interior_face_nodes(i,:) = left_nodes(i, zero_indices);
-    end
+    end 
     
     % I want to grab the positions but matrices...
     interior_positions_flat = node_data(interior_face_nodes, :);
@@ -293,21 +291,18 @@ function interior_normals = compute_In(node_data, element_data, I2E)
     % Displacement
     displacement = squeeze(interior_positions(:, 2, :) - interior_positions(:, 1, :));
 
-    % Orthogonalize
-    displacement(:, 1) = -displacement(:, 1);
+    % Orthogonalize by rotation 90 degree clockwise
+    displacement = [displacement(:,2), -displacement(:,1)];
 
     % Norm
-    interior_normals(:, [2,1]) = displacement ./ vecnorm(displacement, 2, 2);
+    interior_normals = displacement ./ vecnorm(displacement, 2, 2);
 end
 
 function boundary_normals = compute_Bn(node_data, element_data, B2E)
     %
     % Compute the normal vector going from the left to right element
-    % for boundary faces
+    % for boundary faces.
     %
-
-    % Preallocate the array
-    boundary_normals = zeros(size(B2E, 1), 2);
 
     % Grab some slices of things
 
@@ -338,10 +333,10 @@ function boundary_normals = compute_Bn(node_data, element_data, B2E)
     displacement = squeeze(boundary_positions(:, 2, :) - boundary_positions(:, 1, :));
     
     % Orthogonalize
-    displacement(:, 1) = -displacement(:, 1);
+    displacement = [displacement(:,2), -displacement(:,1)];
 
     % Norm
-    boundary_normals(:, [2,1]) = displacement ./ vecnorm(displacement, 2, 2);
+    boundary_normals = displacement ./ vecnorm(displacement, 2, 2);
 end
 
 function element_areas = compute_element_areas(node_data, element_data)
@@ -359,5 +354,11 @@ function element_areas = compute_element_areas(node_data, element_data)
     vec_2 = squeeze(points(3,:, :) - points(1,:, :))';
 
     % Cross product for the area
-    element_areas = 0.5 * abs(vec_1(1,:) .* vec_2(2,:) - vec_1(2,:) .* vec_2(1,:));
+    signed_area = 0.5 * ( ...
+        vec_1(1,:) .* vec_2(2,:) - ...
+        vec_1(2,:) .* vec_2(1,:) );
+
+    assert(all(signed_area > 0), "Connectivities not counter-clockwise");
+
+    element_areas = abs(signed_area);
 end

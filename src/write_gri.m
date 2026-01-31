@@ -101,6 +101,34 @@ function write_gri_from_FEMesh(filename, msh, ...
     outlet_top_nodes    = outlet_top_nodes(index_outlet_top);
     outlet_bottom_nodes = outlet_bottom_nodes(index_outlet_bottom);
 
+    % Check that the x positions of the node match 1 to 1. If not, 
+    % shift them.
+    tol = 1e-12;
+    x_top    = nodes(inlet_top_nodes, 1);
+    x_bottom = nodes(inlet_bottom_nodes, 1);
+    diff_x = abs(x_top - x_bottom);
+    if ~all(diff_x < tol)
+        warning('Periodic nodes mismatch in x-coordinates! Shifting them');
+
+        % Compute the average x for each pair
+        x_avg = (x_top + x_bottom) / 2;
+        % Replace values
+        nodes(inlet_top_nodes, 1)    = x_avg;
+        nodes(inlet_bottom_nodes, 1) = x_avg;
+    end
+    x_top    = nodes(outlet_top_nodes, 1);
+    x_bottom = nodes(outlet_bottom_nodes, 1);
+    diff_x = abs(x_top - x_bottom);
+    if ~all(diff_x < tol)
+        warning('Periodic nodes mismatch in x-coordinates! Shifting them');
+
+        % Compute the average x for each pair
+        x_avg = (x_top + x_bottom) / 2;
+        % Replace values
+        nodes(outlet_top_nodes, 1)    = x_avg;
+        nodes(outlet_bottom_nodes, 1) = x_avg;
+    end
+
     % Open an output stream
     fstream = fopen(filename, 'w');
 

@@ -20,15 +20,13 @@ write_gri("passage_coarse.gri", msh, ...
           inlet_top, inlet_bottom, ...
           outlet_top, outlet_bottom ...
          );
+
 % Verify meshes
-
-
 mesh_verification('test_grids/test.gri');
 mesh_verification('test_grids/test_2.gri');
 mesh_verification('test_grids/test_3.gri');
-%{
 mesh_verification('passage_coarse.gri');
-plotgri('passage_coarse.gri')
+%{
 
 mesh_verification('test_grids/test1.gri');
 

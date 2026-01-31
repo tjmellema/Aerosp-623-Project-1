@@ -55,6 +55,9 @@ while (curtot ~= nelemtot),
     for edge=1:nedge,
       plotedge(V(A(fvec(edge,:)),:));
     end
+    centroid = mean(V(A(1:3), :), 1);  % use the 3 corner nodes only
+    text(centroid(1), centroid(2), sprintf('%d', elem), ...
+         'Color','m','FontSize',10,'HorizontalAlignment','center');
   end
   curtot = curtot + nelem;
 end
