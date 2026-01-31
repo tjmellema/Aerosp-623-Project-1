@@ -23,7 +23,7 @@ function write_grid(filename, nodes, elements, ...
 
     % Grab the boundary faces from each point set mask. We'll start with
     % the periodic one since that's the most important.
-    tol = 1e-10;
+    tol = 1e-3;
 
     x = boundary_face_points(:,:,1);
     y = boundary_face_points(:,:,2);
