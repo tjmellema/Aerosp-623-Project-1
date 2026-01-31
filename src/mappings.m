@@ -111,10 +111,11 @@ function interior_face_to_edge = compute_I2E(element_data, boundary_mappings, pe
 
     % Grab the boundary face pairs
     % NOTE: This ignores periodic boundary pairs
-    boundary_faces =  compute_boundary_face_pairs(boundary_mappings, periodic_pairs);
+    boundary_faces =  sort(compute_boundary_face_pairs(boundary_mappings, periodic_pairs), 2);
     
     % Boundary face mask
     is_boundary_face = ismember(faces, boundary_faces, 'rows');
+    assert(size(boundary_faces, 1) == sum(is_boundary_face), "Mismatch in boundary face size")
 
     % Get only the interior face node pairs
     interior_faces = faces(~is_boundary_face, :);
