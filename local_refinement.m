@@ -1,6 +1,7 @@
 function [new_nodes, new_elements] = local_refinement(nodes, elements,...
                                        top_spline, bottom_spline, ...
                                        I2E, B2E)
+
     n_elements = size(elements, 1);
     n_nodes = size(nodes, 1);
     n_interior_faces = size(I2E, 1);
