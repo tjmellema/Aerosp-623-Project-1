@@ -15,8 +15,14 @@ function Xnew = spline_curvature_ref(X, nI0, Q, ref, Ufac, TEfac);
 
 % include TE point at end twice
 [~,I] = max(X(:,1)); % ensures always takes TE
-X = X([1:size(X,1),I],:);
-X(end,1) = X(end,1)+1e-6; % ensures will always work
+% makes is so it should always work
+if I == 1
+    X = X([I,1:size(X,1)],:);
+    X(1,1) = X(1,1)+1e-6;
+else
+    X = X([1:size(X,1),I],:);
+    X(end,1) = X(end,1)+1e-6;
+end
 
 % min/max of given points (x-coordinate)
 xmin = min(X(:,1));
