@@ -100,122 +100,93 @@ function mask = compute_node_mask(element_nodes, face_nodes)
 end
 
 function interior_face_to_edge = compute_I2E(element_data, boundary_mappings, periodic_pairs)
-    % When constructing the interior face data, we need to fill in all
-    % but the boundary mappings, except for the periodic face pairs.
-    % NOTE: We technically have a degenerate state for the matched interior
-    % edge for the periodic boundary condition. This can be solved with a
-    % unqiue call I believe. Hopefully it's not an issue right now.
-    
-    % Grab the fair pairs
+    % Grab the face pairs
     faces = compute_face_pairs(element_data);
-
-    % Grab the boundary face pairs
-    % NOTE: This ignores periodic boundary pairs
-    boundary_faces =  sort(compute_boundary_face_pairs(boundary_mappings, periodic_pairs), 2);
+    boundary_faces = sort(compute_boundary_face_pairs(boundary_mappings, periodic_pairs), 2);
     
     % Boundary face mask
     is_boundary_face = ismember(faces, boundary_faces, 'rows');
     assert(size(boundary_faces, 1) == sum(is_boundary_face), "Mismatch in boundary face size")
-
-    % Get only the interior face node pairs
+    
     interior_faces = faces(~is_boundary_face, :);
-
-    % Preallocate the array now
     interior_face_to_edge = zeros(size(interior_faces, 1), 4);
-
-    % Sort the interior face and element data arrays
+    
     sorted_interior_faces = sort(interior_faces, 2);
     sorted_element_data = sort(element_data, 2);
-
-    % Substitute
-    element_data_forward_sub = compute_forward_substitution(sorted_element_data, periodic_pairs);
-    % Re-sort 
-    sorted_element_data_forward_sub = sort(element_data_forward_sub, 2);
-
-    % Substitute
-    element_data_backward_sub = compute_backward_substitution(sorted_element_data, periodic_pairs);
-    % Re-sort 
-    sorted_element_data_backward_sub = sort(element_data_backward_sub, 2);
-
-    % Find the elements that match the interior edge
-    % NOTE: Hopefully this loop isn't to slow...
+    
+    % Pre-compute substitutions
+    elem_fwd = sort(compute_forward_substitution(sorted_element_data, periodic_pairs), 2);
+    elem_back = sort(compute_backward_substitution(sorted_element_data, periodic_pairs), 2);
+    % --- OPTIMIZATION: Linear Indexing (Pairing) ---
+    % Convert N x 2 rows into a single unique integer: hash = min*K + max
+    % This replaces 'ismember(..., 'rows')' with a simple vector comparison.
+    max_node = max([element_data(:); sorted_interior_faces(:)]);
+    K = max_node + 1; 
+    
+    % Hash the element edges
+    e1 = sorted_element_data(:,1)*K + sorted_element_data(:,2);
+    e2 = sorted_element_data(:,1)*K + sorted_element_data(:,3);
+    e3 = sorted_element_data(:,2)*K + sorted_element_data(:,3);
+    
+    % Hash the periodic element edges
+    ef1 = elem_fwd(:,1)*K + elem_fwd(:,2); ef2 = elem_fwd(:,1)*K + elem_fwd(:,3); ef3 = elem_fwd(:,2)*K + elem_fwd(:,3);
+    eb1 = elem_back(:,1)*K + elem_back(:,2); eb2 = elem_back(:,1)*K + elem_back(:,3); eb3 = elem_back(:,2)*K + elem_back(:,3);
     for i = 1:size(sorted_interior_faces, 1)
         node_pair = sorted_interior_faces(i, :);
-        node_pair_forward_sub = compute_forward_substitution(node_pair, periodic_pairs)';
-        node_pair_backward_sub = compute_backward_substitution(node_pair, periodic_pairs)';
-
-        % Check which elements correspond to this face pair. We should 
-        % have two elements, so if that criterion isn't met check for 
-        % periodic mappings
-        edge_1 = ismember(sorted_element_data(:, [1,2]), node_pair, 'rows');
-        edge_2 = ismember(sorted_element_data(:, [1,3]), node_pair, 'rows');
-        edge_3 = ismember(sorted_element_data(:, [2,3]), node_pair, 'rows');
-        total_edges = edge_1 + edge_2 + edge_3;
-        total_found_elements = sum(total_edges);
-
-        if total_found_elements == 2
-            element_indices = find(total_edges);
-            interior_face_to_edge(i, [1, 3]) = element_indices;
-        elseif total_found_elements == 1
-            % When we have periodic pairs, we need to do a forward mapping
-            % substitution on the element data, resort it, and recompute
-            % masks for finding the indices. We must also do the same
-            % for the backward substitution
-
-            % Mask
-            edge_1_forward = ismember(sorted_element_data_forward_sub(:, [1,2]), node_pair, 'rows');
-            edge_2_forward = ismember(sorted_element_data_forward_sub(:, [1,3]), node_pair, 'rows');
-            edge_3_forward = ismember(sorted_element_data_forward_sub(:, [2,3]), node_pair, 'rows');
-            edge_1_backward = ismember(sorted_element_data_backward_sub(:, [1,2]), node_pair, 'rows');
-            edge_2_backward = ismember(sorted_element_data_backward_sub(:, [1,3]), node_pair, 'rows');
-            edge_3_backward = ismember(sorted_element_data_backward_sub(:, [2,3]), node_pair, 'rows');
-            total_edges = edge_1_forward + edge_2_forward + edge_3_forward + edge_1_backward + edge_2_backward + edge_3_backward;
-
+        % Hash the target node pair
+        target_hash = node_pair(1)*K + node_pair(2);
+        
+        % Check standard edges
+        total_edges = (e1 == target_hash) + (e2 == target_hash) + (e3 == target_hash);
+        found_count = sum(total_edges);
+        
+        if found_count == 2
             element_indices = find(total_edges);
             interior_face_to_edge(i, [1, 3]) = element_indices;
         else
-            assert(false, "I don't know how you got here. 2 periodic faces!")
+            % Check periodic edges (Forward and Backward)
+            total_edges_p = (ef1 == target_hash) + (ef2 == target_hash) + (ef3 == target_hash) + ...
+                            (eb1 == target_hash) + (eb2 == target_hash) + (eb3 == target_hash);
+            
+            % Combine standard and periodic matches
+            all_matches = total_edges | total_edges_p;
+            element_indices = find(all_matches);
+            
+            % Sanity check: Should always have exactly 2 elements for an interior/periodic face
+            if length(element_indices) ~= 2
+                 error("Face %d connects to %d elements. Check periodic connectivity.", i, length(element_indices));
+            end
+            interior_face_to_edge(i, [1, 3]) = element_indices;
         end
-
-
-        % Now that we have the element ids we can find the corresponding 
-        % local face id of the interior edge. Importantly, since the local
-        % face is opposite the local node, we can find the id of the node 
-        % left out.
-        left_element_nodes = element_data(interior_face_to_edge(i, 1), :);
-        right_element_nodes = element_data(interior_face_to_edge(i, 3), :);
-
-        left_mask = compute_node_mask(left_element_nodes, node_pair);
-        right_mask = compute_node_mask(right_element_nodes, node_pair);
-
-        left_local_indices = find(~left_mask);
-        right_local_indices = find(~right_mask);
-
-        % Deal with periodic boundary conditions
-        if size(left_local_indices, 2) == 1
-            interior_face_to_edge(i, 2) = left_local_indices;
+        % Node masking logic (exactly as original)
+        node_pair_fwd = compute_forward_substitution(node_pair, periodic_pairs)';
+        node_pair_back = compute_backward_substitution(node_pair, periodic_pairs)';
+        
+        left_nodes = element_data(interior_face_to_edge(i, 1), :);
+        right_nodes = element_data(interior_face_to_edge(i, 3), :);
+        
+        % Local index logic... (rest of original code follows)
+        l_mask = compute_node_mask(left_nodes, node_pair);
+        r_mask = compute_node_mask(right_nodes, node_pair);
+        l_idx = find(~l_mask); r_idx = find(~r_mask);
+        if length(l_idx) == 1, interior_face_to_edge(i, 2) = l_idx;
         else
-            left_mask = compute_node_mask(left_element_nodes, node_pair_backward_sub);
-            left_local_indices = find(~left_mask);
-            if size(left_local_indices, 2) == 1
-                interior_face_to_edge(i, 2) = left_local_indices;
+            l_mask = compute_node_mask(left_nodes, node_pair_back);
+            l_idx = find(~l_mask);
+            if length(l_idx) == 1, interior_face_to_edge(i, 2) = l_idx;
             else
-                left_mask = compute_node_mask(left_element_nodes, node_pair_forward_sub);
-                left_local_indices = find(~left_mask);
-                interior_face_to_edge(i, 2) = left_local_indices;
+                l_mask = compute_node_mask(left_nodes, node_pair_fwd);
+                interior_face_to_edge(i, 2) = find(~l_mask);
             end
         end
-        if size(right_local_indices, 2) == 1
-            interior_face_to_edge(i, 4) = right_local_indices;
+        if length(r_idx) == 1, interior_face_to_edge(i, 4) = r_idx;
         else
-            right_mask = compute_node_mask(right_element_nodes, node_pair_forward_sub);
-            right_local_indices = find(~right_mask);
-            if size(right_local_indices, 2) == 1
-                interior_face_to_edge(i, 4) = right_local_indices;
+            r_mask = compute_node_mask(right_nodes, node_pair_fwd);
+            r_idx = find(~r_mask);
+            if length(r_idx) == 1, interior_face_to_edge(i, 4) = r_idx;
             else
-                right_mask = compute_node_mask(right_element_nodes, node_pair_backward_sub);
-                right_local_indices = find(~right_mask);
-                interior_face_to_edge(i, 4) = right_local_indices;
+                r_mask = compute_node_mask(right_nodes, node_pair_back);
+                interior_face_to_edge(i, 4) = find(~r_mask);
             end
         end
     end
