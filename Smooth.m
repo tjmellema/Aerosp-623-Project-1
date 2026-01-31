@@ -34,7 +34,10 @@ end
 function isBoundary = check_boundary(E2N, B2E, num_nodes)
     isBoundary = false(num_nodes,1);
     for i = 1:size(B2E, 1)
-        [elem, edge, ~] = B2E(i);
+
+        elem = B2E(i,1);
+        edge = B2E(i,2);
+
 
         %if this is local edge 1 - mark nodes 2 and 3
         if edge == 1
