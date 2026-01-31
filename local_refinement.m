@@ -23,14 +23,14 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
 
         face_center = mean(left_element_positions(1, :) + left_element_positions(2, :), 1);
 
-        edge_length = sqrt(sum(left_element_positions(1, :) - left_element_positions(2, :)).^2);
+        edge_length = sqrt(sum((left_element_positions(1, :) - left_element_positions(2, :)).^2));
 
         % Grab the mesh length from the size function
         ideal_h = sizing(face_center, top_spline, bottom_spline);
 
         % Add the refinement to the left and right elements to make
         % things easier later on
-        if edge_length < ideal_h
+        if edge_length > ideal_h
             edge_refinement(left_element, left_face) = 1;
             edge_refinement(right_element, right_face) = 1;
             interior_edge_refinement(i) = 1;
@@ -39,8 +39,8 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
 
     % Initialize new nodes and elements
     edge2node = containers.Map('KeyType','char','ValueType','int32');
-    new_nodes = nodes;
     edge_key = @(a,b) sprintf('%d_%d', min(a,b), max(a,b));
+    new_nodes = nodes;
     function m = get_mid(a,b)
         key = sprintf('%d_%d', min(a,b), max(a,b));
         if isKey(edge2node,key)
@@ -58,12 +58,11 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
 
             nodesL = elements(eL,:);
             nodesL(fL) = [];
-    
+
             a = nodesL(1);
             b = nodesL(2);
-    
+        
             key = edge_key(a,b);
-    
             if ~isKey(edge2node, key)
                 midpoint = 0.5*(nodes(a,:) + nodes(b,:));
                 new_nodes(end+1,:) = midpoint;
@@ -86,14 +85,15 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
         m12 = get_mid(n1,n2);
         m23 = get_mid(n2,n3);
         m31 = get_mid(n3,n1);
+
+        flags = [~isempty(m12), ~isempty(m23), ~isempty(m31)];
     
         nflag = sum(flags);
     
         switch nflag
-    
+            % TODO: Double check these
             case 0
                 new_elements(end+1,:) = nodes_e;
-    
             case 1
                 if flags(1)
                     new_elements(end+1,:) = [n1 m12 n3];
@@ -105,7 +105,6 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
                     new_elements(end+1,:) = [n1 n2 m31];
                     new_elements(end+1,:) = [m31 n2 n3];
                 end
-    
             case 2
                 if ~flags(1)
                     new_elements(end+1,:) = [n1 n2 m23];
@@ -117,10 +116,9 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
                     new_elements(end+1,:) = [m31 n2 n3];
                 else
                     new_elements(end+1,:) = [n1 m12 m23];
-                    new_elements(end+1,:) = [m12 n2 n3];
-                    new_elements(end+1,:) = [m23 m31 n3];
+                    new_elements(end+1,:) = [m12 n2 m23];
+                    new_elements(end+1,:) = [n1 m23 n3];
                 end
-    
             case 3
                 new_elements(end+1,:) = [n1 m12 m31];
                 new_elements(end+1,:) = [m12 n2 m23];
