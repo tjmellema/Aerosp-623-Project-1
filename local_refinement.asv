@@ -1,0 +1,61 @@
+function [new_nodes, new_elements] = local_refinement(nodes, elements,...
+                                       top_spline, bottom_spline, ...
+                                       I2E, B2E)
+    n_elements = size(elements, 1);
+    n_nodes = size(nodes, 1);
+    n_interior_faces = size(I2E, 1);
+
+    edge_refinement = zeros(n_elements, 3);
+
+    % Loop over the interior faces to determine whether to flag refinement
+    % or not
+    for i = 1:n_interior_faces
+        % Grab the elements
+        left_element = I2E(i, 1);
+        left_face = I2E(i, 2);
+        right_element = I2E(i, 3);
+        right_face = I2E(i, 4);
+
+        % Grab edge length from the left element
+        left_elements_nodes = elements(left_element, :);
+        left_elements_nodes(left_face) = [];
+        left_element_positions = nodes(left_elements_nodes, :);
+
+        face_center = mean(left_element_positions(1, :) + left_element_positions(2, :), 1);
+
+        edge_length = sqrt(sum(left_element_positions(1, :) - left_element_positions(2, :)).^2);
+
+        % Grab the mesh length from the size function
+        ideal_h = sizing(face_center, top_spline, bottom_spline);
+
+        % Add the refinement to the left and right elements to make
+        % things easier later on
+        if edge_length < ideal_h
+            edge_refinement(left_element, left_face) = 1;
+            edge_refinement(right_element, right_face) = 1;
+        end
+    end
+
+    % Update the nodes and elements with the refinement
+    for i = 1:n_elements
+        if any(edge_refinement(i, :))
+            % Calculate new node positions and add them to new_nodes
+            for j = 1:3
+                if edge_refinement(u, j) == 1
+                    new_node_position = nodes(elements(i, j), + nodes(elements(i, mod(face, 3) + 1, :)))/2;
+                    new_nodes = [new_nodes; new_node_position]; % Append new node
+                    new_elements(elem, face) = size(new_nodes, 1); % Update element connectivity
+                end
+            end
+        end
+    end
+
+    % Initialize new nodes and elements
+    new_nodes = nodes;
+    new_elements = elements;
+end
+
+function smoother(point, adjacent_nodes)
+    iterations = 5;
+
+end
