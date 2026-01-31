@@ -8,12 +8,12 @@ function plot_projection()
     X_BE = [0,0;.5,.125;1,.125;1.5,.0625;2,0];
     ref = 3;
 
-    %boundary spline
+    % Boundary spline
     [X_BE_spline, ~] = spline_boundary(X_BE, X_BE, ref);
 
-    %projection
+    % Projection
     for i = 1:size(Xpts,1)
-        [d(i), xb(i), yb(i)] = projection(Xpts(i,:), X_BE_spline);
+        [distance(i), point(i, :)] = projection(Xpts(i,:), X_BE_spline);
     end
 
     %plot the reference spline
@@ -24,8 +24,8 @@ function plot_projection()
     scatter(Xpts(:,1),Xpts(:,2));
 
     %plot the projection to the spline
-    X_plot = [Xpts(:,1)';xb];
-    Y_plot = [Xpts(:,2)';yb];
+    X_plot = [Xpts(:,1)'; point(:, 1)'];
+    Y_plot = [Xpts(:,2)'; point(:, 2)'];
     plot(X_plot, Y_plot, '-b', Linewidth=2);
 
     title('Sample Projection Function')

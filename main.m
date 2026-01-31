@@ -30,11 +30,32 @@ write_gri("coarse.gri", nodes, elements, ...
          );
 
 % Verify meshes
+tic;
 mesh_verification('test_grids/test.gri');
-mesh_verification('test_grids/test_2.gri');
-mesh_verification('test_grids/test_3.gri');
-mesh_verification('coarse.gri');
+time1 = toc;
+fprintf('Time for test.gri: %.4f seconds\n', time1);
 
+tic;
+mesh_verification('test_grids/test_2.gri');
+time2 = toc;
+fprintf('Time for test_2.gri: %.4f seconds\n', time2);
+
+tic;
+mesh_verification('test_grids/test_3.gri');
+time3 = toc;
+fprintf('Time for test_3.gri: %.4f seconds\n', time3);
+
+tic;
+mesh_verification('coarse.gri');
+time4 = toc;
+fprintf('Time for coarse.gri: %.4f seconds\n', time4);
+
+%{
+tic;
+mesh_verification('passage_coarse1.gri');
+time5 = toc;
+fprintf('Time for passage_coarse1.gri: %.4f seconds\n', time5);
+%}
 
 create_local_refinement();
 plotMesh(E2N, nodes, 'tri')
