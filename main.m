@@ -65,7 +65,7 @@ mesh_verification('passage_coarse3.gri');
 time7 = toc;
 fprintf('Time for passage_coarse3.gri: %.4f seconds\n', time7);
 
-%{
+
 create_local_refinement();
 plotMesh(E2N, nodes, 'tri')
 
@@ -74,4 +74,3 @@ write_gri("coarse_local_refinement.gri", nodes, E2N, ...
           inlet_top, inlet_bottom, ...
           outlet_top, outlet_bottom ...
          );
-%}

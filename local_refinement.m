@@ -22,7 +22,7 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
         left_elements_nodes(left_face) = [];
         left_element_positions = nodes(left_elements_nodes, :);
 
-        face_center = mean(left_element_positions(1, :) + left_element_positions(2, :), 1);
+        face_center = 0.5*(left_element_positions(1,:) + left_element_positions(2,:));
 
         edge_length = sqrt(sum((left_element_positions(1, :) - left_element_positions(2, :)).^2));
 
@@ -185,11 +185,13 @@ function [new_nodes, new_elements] = local_refinement(nodes, elements,...
                 end
             case 3
                 new_elements(end+1,:) = [n1 m12 m31];
+                new_elements(end+1,:) = [m31 m12 m23];
                 new_elements(end+1,:) = [m12 n2 m23];
                 new_elements(end+1,:) = [m31 m23 n3];
-                new_elements(end+1,:) = [m12 m23 m31];
         end
     end
+
+    new_nodes = Smooth(new_nodes, 5, new_elements, B2E, size(new_nodes, 1));
 end
 
 function ang = triAngle(A, B, C)

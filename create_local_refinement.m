@@ -25,7 +25,7 @@ top_coords = unique(node_data(top_nodes,:), 'rows');
 bottom_coords = unique(node_data(bottom_nodes,:), 'rows');
 
 % Create the splines
-%[spline_top, spline_bottom] = spline_boundary(top_coords, bottom_coords, 3);
+[spline_top, spline_bottom] = spline_boundary(top_coords, bottom_coords, 3);
 
-[nodes, E2N] = local_refinement(node_data, element_data, top_coords, bottom_coords, I2E, B2E);
+[nodes, E2N] = local_refinement(node_data, element_data, spline_top, spline_bottom, I2E, B2E);
 %plotMesh(E2N, nodes, 'tri', false);

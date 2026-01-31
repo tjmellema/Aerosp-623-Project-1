@@ -7,9 +7,14 @@
 function Xsnew = Smooth(Xs, num_iter, E2N, B2E, num_nodes)
     %call the helper funcitons
     N = Connectivity(E2N, num_nodes); % Create connectivity matrix
-    isBoundary = check_boundary(E2N, B2E, num_nodes); % Identify boundary nodes
-
-
+    isBoundary = check_boundary(E2N, num_nodes); % Identify boundary nodes
+    %{
+    figure;
+    scatter(Xs(:,1), Xs(:,2), 20, isBoundary, 'filled');
+    axis equal; colorbar;
+    title('Detected Boundary Nodes');
+    %}
+    
     w = 0.3; % relaxation factor
     Xsnew = Xs; % initialize
     %loop through the smoothing function for each iteration
@@ -31,30 +36,21 @@ function Xsnew = Smooth(Xs, num_iter, E2N, B2E, num_nodes)
 end
 
 %create a of each node that is considered a boundary node
-function isBoundary = check_boundary(E2N, B2E, num_nodes)
+function isBoundary = check_boundary(E2N, num_nodes)
+
+    edges = [E2N(:,[1 2]);
+             E2N(:,[2 3]);
+             E2N(:,[3 1])];
+
+    edges = sort(edges,2);
+
+    [u,~,idx] = unique(edges,'rows');
+    counts = accumarray(idx,1);
+
+    boundary_edges = u(counts == 1,:);
+
     isBoundary = false(num_nodes,1);
-    for i = 1:size(B2E, 1)
-
-        elem = B2E(i,1);
-        edge = B2E(i,2);
-
-
-        %if this is local edge 1 - mark nodes 2 and 3
-        if edge == 1
-            isBoundary(E2N(elem, 2)) = true;
-            isBoundary(E2N(elem, 3)) = true;
-        
-       %if this is local edge 2 - mark nodes 1 and 3
-        elseif edge == 2
-            isBoundary(E2N(elem, 1)) = true;
-            isBoundary(E2N(elem, 3)) = true;
-
-        %if this is local edge 3 - mark nodes 1 and 2
-        else
-            isBoundary(E2N(elem, 1)) = true;
-            isBoundary(E2N(elem, 2)) = true;
-        end
-    end
+    isBoundary(boundary_edges(:)) = true;
 end
 
 %creates a set of node connectivities between each node
