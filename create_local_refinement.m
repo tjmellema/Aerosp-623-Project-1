@@ -1,5 +1,7 @@
 %local refinement call
 
+
+
 [node_data, element_data, boundary_mappings, periodic_pairs] = read_gri("passage_coarse.gri");
 
 top_nodes = unique(boundary_mappings(boundary_mappings(:,3)==7,1:2));
